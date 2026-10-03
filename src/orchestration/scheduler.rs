@@ -152,10 +152,10 @@ pub async fn print_status(db: &Db) -> Result<()> {
     let steps: Vec<StepRow> = db
         .client
         .query(
-            "SELECT substring(step, 9) AS step, argMax(status, started_at) AS status,
-                    max(started_at) AS started_at,
-                    argMax(dateDiff('millisecond', started_at, finished_at), started_at) / 1000 AS seconds
-             FROM pipeline_log WHERE startsWith(step, 'refresh:') GROUP BY step ORDER BY started_at",
+            "SELECT substring(p.step, 9) AS step, argMax(p.status, p.started_at) AS status,
+                    max(p.started_at) AS started_at,
+                    argMax(dateDiff('millisecond', p.started_at, p.finished_at), p.started_at) / 1000 AS seconds
+             FROM pipeline_log AS p WHERE startsWith(p.step, 'refresh:') GROUP BY p.step ORDER BY started_at",
         )
         .fetch_all()
         .await?;

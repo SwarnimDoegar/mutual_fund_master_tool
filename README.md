@@ -143,7 +143,7 @@ for the ingester. Small rollups that are cheap to compute on demand (`category_s
 consistent with the tables they read.
 
 Two details keep this safe. `CREATE TABLE ... AS SELECT` and `INSERT ... SELECT` match columns by
-position, so after each statement the refresh checks that the query's column names equal the
+position, so before each statement the refresh checks that the query's column names equal the
 table's and fails otherwise. Raw NAVs are read with `FROM nav FINAL`, which applies the
 ReplacingMergeTree's latest-ingest-wins rule at read time (much faster than a `GROUP BY`).
 
