@@ -2,7 +2,10 @@ use anyhow::Result;
 use clap::{Parser, Subcommand};
 use mf::config::Settings;
 use mf::db::Db;
-use mf::{ingest, migrate, refresh, scheduler, sync_config};
+use mf::config::sync as sync_config;
+use mf::db::migrate;
+use mf::ingest;
+use mf::orchestration::{refresh, scheduler};
 use tracing::info;
 
 #[derive(Parser)]

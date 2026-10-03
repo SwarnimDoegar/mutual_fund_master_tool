@@ -1,3 +1,5 @@
+pub mod migrate;
+
 use anyhow::{Context, Result};
 use chrono::{DateTime, NaiveDate, Utc};
 use clickhouse::{Client, Row};

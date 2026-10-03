@@ -1,3 +1,5 @@
+pub mod sync;
+
 use std::path::PathBuf;
 
 use anyhow::{Context, Result};

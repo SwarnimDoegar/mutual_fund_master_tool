@@ -10,9 +10,10 @@ use tracing::{error, info};
 
 use crate::config::Settings;
 use crate::db::{Db, PipelineLogRow};
+use crate::config::sync as sync_config;
+use crate::db::migrate;
 use crate::ingest::{self, IngestArgs};
-use crate::refresh::{self, RefreshArgs};
-use crate::{migrate, sync_config};
+use crate::orchestration::refresh::{self, RefreshArgs};
 
 /// The full pipeline: migrations, config, ingest, metric refresh. Each step is logged to
 /// `pipeline_log` under one run id.

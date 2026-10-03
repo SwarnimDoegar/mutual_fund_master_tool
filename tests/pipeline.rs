@@ -10,7 +10,8 @@ use clickhouse::Row;
 use mf::config::Settings;
 use mf::db::Db;
 use mf::testing::{calendar_growth, d, end};
-use mf::{migrate, refresh};
+use mf::db::migrate;
+use mf::orchestration::refresh;
 use serde::Deserialize;
 
 async fn setup() -> Result<Option<Db>> {

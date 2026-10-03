@@ -112,7 +112,7 @@ publishers), `MF_CONCURRENCY` (8 parallel history requests), `MF_CLICKHOUSE_*`, 
 
 All metrics are SQL in `sql/migrations/`. Every derived table is fed by a refreshable
 materialized view `<table>_mv` that re-runs its full query and atomically swaps the result.
-`mf refresh` triggers them in the order in `src/refresh.rs::REFRESH_ORDER` and verifies each one
+`mf refresh` triggers them in the order in `src/orchestration/refresh.rs::REFRESH_ORDER` and verifies each one
 actually refreshed. Two ClickHouse behaviours (verified on 26.9) make that necessary: a manual
 `SYSTEM REFRESH VIEW` does not cascade to `DEPENDS ON` children, and a stopped view silently
 ignores `SYSTEM REFRESH VIEW` while `SYSTEM WAIT VIEW` still succeeds. The views' own schedule is

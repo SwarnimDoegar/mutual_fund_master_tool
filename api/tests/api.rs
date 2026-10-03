@@ -37,9 +37,9 @@ async fn setup() -> Result<Option<Router>> {
     let db = mf::db::Db::connect(&settings).await?;
     db.exec(&format!("DROP DATABASE IF EXISTS {DB} SYNC")).await?;
     let db = mf::db::Db::connect(&settings).await?;
-    mf::migrate::run(&db).await?;
+    mf::db::migrate::run(&db).await?;
     mf::testing::seed(&db).await?;
-    mf::refresh::run(&db, &Default::default(), None).await?;
+    mf::orchestration::refresh::run(&db, &Default::default(), None).await?;
 
     let cfg = mf_api::config::Config {
         bind: "127.0.0.1:0".parse()?,

@@ -8,6 +8,9 @@
 //! `nav` is a ReplacingMergeTree keyed on (scheme_code, date), so re-ingesting is idempotent and
 //! a corrected NAV for an existing date replaces the old value.
 
+pub mod mfapi;
+pub mod parse;
+
 use std::collections::{HashMap, HashSet};
 use anyhow::Result;
 use chrono::{Duration as ChronoDuration, NaiveDate};
@@ -17,8 +20,8 @@ use tracing::{info, warn};
 
 use crate::config::Settings;
 use crate::db::{CodeDate, Db, FetchStatusRow, NavRow, SchemeRow};
-use crate::mfapi::{LatestItem, MfApi};
-use crate::util::{has_weekday_between, parse_api_date, parse_nav};
+use self::mfapi::{LatestItem, MfApi};
+use self::parse::{has_weekday_between, parse_api_date, parse_nav};
 
 #[derive(clap::Args, Debug, Clone, Default)]
 pub struct IngestArgs {
