@@ -5,19 +5,18 @@ day and computes about 250 metrics per scheme (returns, rolling returns, SIP XIR
 drawdowns, benchmark-relative statistics, peer ranks) as **ClickHouse refreshable materialized
 views**. The Rust service only ingests data and tells ClickHouse when to recompute.
 
-This is the data layer for a public fund-research product; a REST API and web UI are separate
-projects that read these tables.
+A read-only REST API (`api/`, crate `mf-api`) serves the tables; a web UI is the next project.
 
 ```
-mfapi.in ──► mf (Rust) ──► ClickHouse
+mfapi.in ──► mf (Rust) ──► ClickHouse ──► mf-api (Rust, axum) ──► clients
              ingest          raw:      schemes, nav (ReplacingMergeTree, idempotent)
-             refresh ──────► derived:  22 refreshable MVs, recomputed in dependency order
+             refresh ──────► derived:  23 refreshable MVs, recomputed in dependency order
 ```
 
 ## Quick start
 
 ```bash
-docker compose up -d            # ClickHouse + the mf scheduler
+docker compose up -d            # ClickHouse + the mf scheduler + the REST API
 docker compose logs -f mf       # first start backfills all ~38k schemes (~7 min), then computes metrics (~75 s)
 docker compose run --rm mf status
 ```
@@ -31,6 +30,59 @@ curl -s 'http://localhost:18123/?user=mf&password=mf_local_password' --data-bina
    FROM mf.fund_metrics WHERE category='Flexi Cap Fund' AND plan='Direct' AND peer_eligible
    ORDER BY cagr_3y DESC LIMIT 10 FORMAT PrettyCompact"
 ```
+
+API reference: http://localhost:18080/docs (OpenAPI document at `/openapi.json`).
+
+```bash
+curl -s 'localhost:18080/v1/screener?category=Flexi%20Cap%20Fund&plan=Direct&peer_only=true&sort=-sharpe_3y_monthly&limit=5'
+```
+
+## REST API
+
+Read-only, JSON, versioned under `/v1`. Every response is `{"data": ..., "meta": {"as_of_date",
+"data_updated_at", ...}}`; errors are [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) problem
+details (`application/problem+json`). Returns and ratios are fractions (0.12 = 12%).
+
+| Endpoint | What it returns |
+|---|---|
+| `GET /v1/meta` | Dataset summary and freshness |
+| `GET /v1/schemes?q=&category=&plan=&option=&fund_house=&active=` | Search: every word must match the scheme or fund-house name; a number matches the scheme code |
+| `GET /v1/schemes/{code}` | All headline metrics for one scheme (the `fund_metrics` row plus ISINs) |
+| `GET /v1/schemes/{code}/nav?from=&to=&interval=day\|week\|month` | NAV history: `nav` restated across unit changes, `published_nav` as declared |
+| `GET /v1/schemes/{code}/returns` · `/calendar-returns?period=` | Trailing returns · month/quarter/year/FY returns |
+| `GET /v1/schemes/{code}/risk?basis=` · `/relative?basis=&benchmark=` | Risk and drawdown stats · beta/alpha/capture vs category and index |
+| `GET /v1/schemes/{code}/rolling` · `/rolling/{1Y\|3Y\|5Y\|10Y}` | Rolling-return distributions · the series next to the category's |
+| `GET /v1/schemes/{code}/sip` · `/drawdowns` · `/drawdowns/series` | SIP outcomes · worst drawdowns · underwater chart |
+| `GET /v1/schemes/{code}/ranks?metric=&from=` · `/payouts` · `/quality` | Peer ranks (latest or history) · inferred IDCW payouts · data quality |
+| `GET /v1/schemes/{code}/sip/calculate?amount=&start=YYYY-MM&end=&day=&schedule=` | SIP what-if with XIRR |
+| `GET /v1/schemes/{code}/lumpsum/calculate?amount=&date=` | One-time investment what-if |
+| `GET /v1/screener?category=&plan=&min_<metric>=&max_<metric>=&sort=-<metric>&fields=` | Filter and sort on any numeric `fund_metrics` column |
+| `GET /v1/compare?codes=` · `/v1/compare/growth?codes=&from=` | Side-by-side metrics · growth of 100 from a common date |
+| `GET /v1/categories` · `/categories/{c}/stats` · `/categories/{c}/index` | Categories · peer-group distributions · category index |
+| `GET /v1/fund-houses` · `/fund-houses/{name}` · `/v1/benchmarks` | AMC scorecards · index proxies |
+| `GET /health` · `GET /ready` | Liveness · ClickHouse reachable and metrics computed |
+
+Design notes:
+
+* **Response schemas come from the SQL.** At startup the API runs `DESCRIBE` on each endpoint's
+  query and turns the column types into the OpenAPI schemas, so the docs cannot drift from the
+  data. The same step refuses to start if any query no longer compiles against the database.
+* **No SQL is built from input.** Values travel as typed ClickHouse parameters (`{code:UInt32}`);
+  column names in the screener (`fields`, `sort`, `min_*`/`max_*`) must exist in `fund_metrics`
+  as loaded from `system.columns`; unknown parameters are rejected with 400.
+* **Caching.** Data changes once a day. Successful GETs are cached in memory under (data
+  version, URL) and carry a weak ETag (`If-None-Match` → 304) plus
+  `Cache-Control: public, max-age=300, stale-while-revalidate=86400`. Every completed metric
+  refresh changes the data version, which invalidates all keys and ETags at once.
+* **Least privilege.** The API connects as `mf_api` (`docker/clickhouse/users.d/mf-api.xml`):
+  `SELECT` on `mf.*` only, `readonly=2`, and server-side constraints (15 s, 1 GB, 4 threads,
+  500k rows per query) that clients cannot raise.
+* Brotli/gzip compression, CORS (`MF_API_CORS_ORIGINS`), request IDs (`x-request-id`), a
+  request timeout, and graceful shutdown on SIGTERM. Rate limiting is left to the reverse proxy
+  or CDN in front of it.
+
+API settings: `MF_API_BIND`, `MF_API_CLICKHOUSE_*`, `MF_API_CORS_ORIGINS`, `MF_API_CACHE_MB`
+(256), `MF_API_CACHE_MAX_AGE` (300), `MF_API_REQUEST_TIMEOUT` (20), `MF_API_PUBLIC_URL`.
 
 ## Commands
 
@@ -165,14 +217,16 @@ network.
 
 ```bash
 docker compose up -d clickhouse
-./dev.sh test --release        # unit tests + end-to-end SQL test (database mf_test)
+./dev.sh test --release --workspace   # unit tests, end-to-end SQL test (mf_test), API test (mf_api_test)
 ./dev.sh run --release -- daily
 ```
 
-`tests/pipeline.rs` builds synthetic funds with closed-form answers and checks the SQL produces
-them: exact CAGR, SIP XIRR equal to the growth rate, beta = 1.5 and alpha = 0 by construction,
-known drawdown dates, a 5% IDCW payout, a glitch day, a too-young fund (no multi-year rows) and a
-data gap (stale-start window dropped).
+`src/testing.rs` builds synthetic funds with closed-form answers. `tests/pipeline.rs` checks the
+SQL produces them: exact CAGR, SIP XIRR equal to the growth rate, beta = 1.5 and alpha = 0 by
+construction, known drawdown dates, a 5% IDCW payout, a glitch day, a too-young fund (no
+multi-year rows), a data gap (stale-start window dropped) and a ×100 face-value change.
+`api/tests/api.rs` builds the real router on the same data and checks the HTTP layer: search,
+detail, calculators, screener filters and sorting, problem+json errors, caching and 304s.
 
 The metrics were also checked against an independent Python recomputation straight from the
 mfapi API (no shared code) for three real funds: trailing returns, daily and monthly

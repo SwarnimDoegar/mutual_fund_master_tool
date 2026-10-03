@@ -9,6 +9,8 @@ services:
       CLICKHOUSE_USER: ${CLICKHOUSE_USER:-mf}
       CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-mf_local_password}
       CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+      # read-only user for the REST API (docker/clickhouse/users.d/mf-api.xml)
+      CLICKHOUSE_API_PASSWORD: ${CLICKHOUSE_API_PASSWORD:-mf_api_local_password}
     ports:
       - "127.0.0.1:${CLICKHOUSE_HTTP_PORT:-18123}:8123"
     volumes:
@@ -17,6 +19,7 @@ services:
       # Mount single files: the image entrypoint writes its own files into users.d.
       - ./docker/clickhouse/config.d/mf.xml:/etc/clickhouse-server/config.d/mf.xml:ro
       - ./docker/clickhouse/users.d/mf.xml:/etc/clickhouse-server/users.d/mf.xml:ro
+      - ./docker/clickhouse/users.d/mf-api.xml:/etc/clickhouse-server/users.d/mf-api.xml:ro
     ulimits:
       nofile:
         soft: 262144
@@ -31,6 +34,7 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile
+      target: pipeline
     image: mf-pipeline:latest
     restart: unless-stopped
     depends_on:
@@ -50,6 +54,28 @@ services:
       - ./config:/app/config:ro
     # `run` = migrate, then a daily ingest + refresh on MF_SCHEDULE (first run backfills everything).
     command: ["run"]
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: api
+    image: mf-api:latest
+    restart: unless-stopped
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+    environment:
+      MF_API_CLICKHOUSE_URL: http://clickhouse:8123
+      MF_API_CLICKHOUSE_USER: mf_api
+      MF_API_CLICKHOUSE_PASSWORD: ${CLICKHOUSE_API_PASSWORD:-mf_api_local_password}
+      MF_API_CORS_ORIGINS: ${MF_API_CORS_ORIGINS:-*}
+      MF_API_PUBLIC_URL: ${MF_API_PUBLIC_URL:-http://localhost:18080}
+      RUST_LOG: ${RUST_LOG:-info}
+    ports:
+      - "127.0.0.1:${MF_API_PORT:-18080}:8080"
+    # Until the pipeline has created its tables the API exits and is restarted; /ready reports 503
+    # until the first metrics are computed.
 
 volumes:
   clickhouse-data:

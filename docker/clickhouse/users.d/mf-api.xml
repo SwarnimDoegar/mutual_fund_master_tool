@@ -1,0 +1,29 @@
+<clickhouse>
+    <!-- Read-only account for the public REST API. The limits are enforced through constraints,
+         so a client cannot raise them with query-level settings. -->
+    <profiles>
+        <api>
+            <readonly>2</readonly>  <!-- no writes or DDL; query-level settings allowed within constraints -->
+            <max_execution_time>15</max_execution_time>
+            <max_memory_usage>1000000000</max_memory_usage>
+            <max_threads>4</max_threads>
+            <max_result_rows>500000</max_result_rows>
+            <result_overflow_mode>throw</result_overflow_mode>
+            <constraints>
+                <max_execution_time><max>15</max></max_execution_time>
+                <max_memory_usage><max>1000000000</max></max_memory_usage>
+                <max_threads><max>4</max></max_threads>
+                <max_result_rows><max>500000</max></max_result_rows>
+            </constraints>
+        </api>
+    </profiles>
+    <users>
+        <mf_api>
+            <password from_env="CLICKHOUSE_API_PASSWORD"/>
+            <profile>api</profile>
+            <quota>default</quota>
+            <networks><ip>::/0</ip></networks>
+            <grants><query>GRANT SELECT ON mf.*</query></grants>
+        </mf_api>
+    </users>
+</clickhouse>

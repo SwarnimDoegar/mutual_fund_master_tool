@@ -3,6 +3,9 @@ name = "mf"
 version = "0.1.0"
 edition = "2024"
 
+[workspace]
+members = ["api"]
+
 [dependencies]
 anyhow = "1.0.104"
 chrono = "0.4.45"
