@@ -1,8 +1,7 @@
--- Refreshable materialized views, part 4: one wide row of headline metrics per scheme (the
--- screener table), peer ranks with daily history, and category / fund-house rollups.
--- Detailed breakdowns live in the per-family tables (fund_returns, fund_risk, ...).
-
-CREATE TABLE IF NOT EXISTS fund_metrics
+-- One wide row of headline metrics per scheme: the screener table. Detailed breakdowns live in
+-- the per-family tables (fund_returns, fund_risk, ...); NAV-level statistics (all-time high,
+-- 52-week range, 200-day SMA) are computed here directly from nav_clean.
+CREATE OR REPLACE TABLE fund_metrics
 (
     as_of_date                     Date,
     scheme_code                    UInt32,
@@ -140,11 +139,8 @@ CREATE TABLE IF NOT EXISTS fund_metrics
     max_gap_days                   Nullable(UInt16)
 )
 ENGINE = MergeTree
-ORDER BY scheme_code;
-
-CREATE MATERIALIZED VIEW IF NOT EXISTS fund_metrics_mv
-REFRESH EVERY 1 YEAR SETTINGS refresh_retries = 1
-TO fund_metrics EMPTY AS
+ORDER BY scheme_code
+AS
 WITH
     r AS
     (
@@ -168,6 +164,32 @@ WITH
             anyIf(toNullable(abs_return), horizon = 'SI') AS abs_return_si
         FROM fund_returns
         GROUP BY scheme_code
+    ),
+    p AS
+    (
+        -- NAV levels: all-time high, 52-week range (needs a NAV at least a year old), 200-day SMA
+        SELECT
+            scheme_code,
+            arrayMap(x -> x.2, s) AS navs,
+            s[-1].1 AS end_date,
+            s[-1].2 AS nav,
+            arrayMax(navs) AS ath_nav,
+            arrayLast(x -> x.2 = ath_nav, s).1 AS ath_date,
+            1 - nav / ath_nav AS pct_below_ath,
+            toUInt32(dateDiff('day', ath_date, end_date)) AS days_since_ath,
+            s[1].1 <= addYears(end_date, -1) AS has_year,
+            arrayFilter(x -> x.1 > addYears(end_date, -1), s) AS y,
+            if(has_year, arrayMax(x -> x.2, y), NULL) AS high_52w,
+            if(has_year, arrayMin(x -> x.2, y), NULL) AS low_52w,
+            1 - nav / high_52w AS pct_below_52w_high,
+            if(length(navs) >= 200, arrayAvg(arraySlice(navs, -200)), NULL) AS sma_200,
+            nav / sma_200 - 1 AS pct_vs_sma_200
+        FROM
+        (
+            SELECT scheme_code, arraySort(x -> x.1, groupArray((date, nav))) AS s
+            FROM nav_clean
+            GROUP BY scheme_code
+        )
     ),
     k AS
     (
@@ -336,7 +358,7 @@ SELECT
     q.glitches_removed AS glitches_removed, q.max_gap_days AS max_gap_days
 FROM scheme_info AS i
 LEFT JOIN r ON r.scheme_code = i.scheme_code
-LEFT JOIN fund_price_stats AS p ON p.scheme_code = i.scheme_code
+LEFT JOIN p ON p.scheme_code = i.scheme_code
 LEFT JOIN k ON k.scheme_code = i.scheme_code
 LEFT JOIN rel ON rel.scheme_code = i.scheme_code
 LEFT JOIN benchmark_proxy AS bp ON bp.category = i.category
@@ -347,151 +369,4 @@ LEFT JOIN sib ON sib.scheme_code = i.scheme_code
 LEFT JOIN r AS rr ON rr.scheme_code = sib.regular_plan_code
 LEFT JOIN payouts ON payouts.scheme_code = i.scheme_code
 LEFT JOIN data_quality AS q ON q.scheme_code = i.scheme_code
-SETTINGS join_use_nulls = 1;
-
--- Rankable headline metrics in long form. higher_is_better orients each metric (volatility and
--- down-capture: lower is better; drawdowns are negative, so higher is better).
-CREATE VIEW IF NOT EXISTS fund_metrics_long AS
-SELECT
-    as_of_date, scheme_code, category, plan, peer_eligible,
-    m.1 AS metric, assumeNotNull(m.2) AS value, m.3 AS higher_is_better
-FROM fund_metrics
-ARRAY JOIN [
-    ('ret_1m', ret_1m, 1), ('ret_3m', ret_3m, 1), ('ret_6m', ret_6m, 1), ('ret_ytd', ret_ytd, 1),
-    ('ret_1y', ret_1y, 1), ('cagr_3y', cagr_3y, 1), ('cagr_5y', cagr_5y, 1), ('cagr_10y', cagr_10y, 1),
-    ('volatility_3y', volatility_3y, 0), ('sharpe_3y', sharpe_3y, 1), ('sortino_3y', sortino_3y, 1),
-    ('max_drawdown_3y', max_drawdown_3y, 1), ('calmar_3y', calmar_3y, 1),
-    ('sharpe_3y_monthly', sharpe_3y_monthly, 1),
-    ('alpha_3y_category', alpha_3y_category, 1), ('information_ratio_3y_category', information_ratio_3y_category, 1),
-    ('down_capture_3y_category', down_capture_3y_category, 0),
-    ('rolling_3y_median', rolling_3y_median, 1), ('rolling_3y_pct_beat_category', rolling_3y_pct_beat_category, 1),
-    ('sip_xirr_3y', sip_xirr_3y, 1), ('sip_xirr_5y', sip_xirr_5y, 1)
-] AS m
-WHERE m.2 IS NOT NULL AND isFinite(assumeNotNull(m.2));
-
--- Peer ranks within category x plan (peer_eligible schemes), appended every run so rank history
--- is kept. Re-running for the same as_of_date replaces that day's rows (ReplacingMergeTree).
--- rank 1 = best; percentile 100 = best; quartile 1 = top.
-CREATE TABLE IF NOT EXISTS fund_ranks
-(
-    as_of_date  Date,
-    metric      LowCardinality(String),
-    scheme_code UInt32,
-    category    LowCardinality(String),
-    plan        LowCardinality(String),
-    value       Float64,
-    rank        UInt32,
-    peers       UInt32,
-    percentile  Float64,
-    quartile    UInt8,
-    computed_at DateTime64(3)
-)
-ENGINE = ReplacingMergeTree(computed_at)
-ORDER BY (as_of_date, metric, scheme_code);
-
-CREATE MATERIALIZED VIEW IF NOT EXISTS fund_ranks_mv
-REFRESH EVERY 1 YEAR SETTINGS refresh_retries = 1
-APPEND TO fund_ranks EMPTY AS
-SELECT
-    as_of_date, metric, scheme_code, category, plan, value,
-    toUInt32(rank() OVER (PARTITION BY category, plan, metric
-                          ORDER BY if(higher_is_better, value, -value) DESC)) AS rank,
-    toUInt32(count() OVER (PARTITION BY category, plan, metric)) AS peers,
-    if(peers > 1, (peers - rank) / (peers - 1) * 100, 100.) AS percentile,
-    toUInt8(ceil(4 * rank / peers)) AS quartile,
-    now64(3) AS computed_at
-FROM fund_metrics_long
-WHERE peer_eligible;
-
-CREATE VIEW IF NOT EXISTS fund_ranks_latest AS
-SELECT * EXCEPT computed_at
-FROM fund_ranks FINAL
-WHERE as_of_date = (SELECT max(as_of_date) FROM fund_ranks);
-
--- Distribution of each headline metric across a category's peer group.
-CREATE TABLE IF NOT EXISTS category_stats
-(
-    as_of_date        Date,
-    category          LowCardinality(String),
-    plan              LowCardinality(String),
-    metric            LowCardinality(String),
-    n_funds           UInt32,
-    mean              Float64,
-    median            Float64,
-    p25               Float64,
-    p75               Float64,
-    min_value         Float64,
-    max_value         Float64,
-    stddev            Float64,
-    best_scheme_code  UInt32,
-    worst_scheme_code UInt32
-)
-ENGINE = MergeTree
-ORDER BY (category, plan, metric);
-
-CREATE MATERIALIZED VIEW IF NOT EXISTS category_stats_mv
-REFRESH EVERY 1 YEAR SETTINGS refresh_retries = 1
-TO category_stats EMPTY AS
-SELECT
-    any(as_of_date) AS as_of_date, category, plan, metric,
-    toUInt32(count()) AS n_funds,
-    avg(value) AS mean,
-    quantileExactInclusive(0.5)(value) AS median,
-    quantileExactInclusive(0.25)(value) AS p25,
-    quantileExactInclusive(0.75)(value) AS p75,
-    min(value) AS min_value,
-    max(value) AS max_value,
-    stddevSamp(value) AS stddev,
-    argMax(scheme_code, if(higher_is_better, value, -value)) AS best_scheme_code,
-    argMin(scheme_code, if(higher_is_better, value, -value)) AS worst_scheme_code
-FROM fund_metrics_long
-WHERE peer_eligible
-GROUP BY category, plan, metric;
-
--- Fund house (AMC) scorecard: breadth plus how its ranked funds sit within their categories.
-CREATE TABLE IF NOT EXISTS fund_house_stats
-(
-    as_of_date                Date,
-    fund_house                LowCardinality(String),
-    schemes                   UInt32,
-    active_schemes            UInt32,
-    ranked_funds              UInt32,
-    categories                UInt32,
-    avg_percentile_cagr_3y    Nullable(Float64),
-    pct_top_quartile_cagr_3y  Nullable(Float64),
-    avg_percentile_sharpe_3y  Nullable(Float64),
-    avg_percentile_rolling_3y Nullable(Float64),
-    first_nav_date            Nullable(Date)
-)
-ENGINE = MergeTree
-ORDER BY fund_house;
-
-CREATE MATERIALIZED VIEW IF NOT EXISTS fund_house_stats_mv
-REFRESH EVERY 1 YEAR SETTINGS refresh_retries = 1
-TO fund_house_stats EMPTY AS
-SELECT
-    any(i.as_of_date) AS as_of_date,
-    i.fund_house AS fund_house,
-    toUInt32(count()) AS schemes,
-    toUInt32(countIf(i.is_active)) AS active_schemes,
-    toUInt32(countIf(i.peer_eligible)) AS ranked_funds,
-    toUInt32(uniqExactIf(i.category, i.peer_eligible)) AS categories,
-    avgIf(rk.pct_cagr, rk.pct_cagr IS NOT NULL) AS avg_percentile_cagr_3y,
-    countIf(rk.q_cagr = 1) / nullIf(countIf(rk.q_cagr IS NOT NULL), 0) AS pct_top_quartile_cagr_3y,
-    avgIf(rk.pct_sharpe, rk.pct_sharpe IS NOT NULL) AS avg_percentile_sharpe_3y,
-    avgIf(rk.pct_roll, rk.pct_roll IS NOT NULL) AS avg_percentile_rolling_3y,
-    min(i.inception_date) AS first_nav_date
-FROM scheme_info AS i
-LEFT JOIN
-(
-    SELECT scheme_code,
-        anyIf(toNullable(percentile), metric = 'cagr_3y') AS pct_cagr,
-        anyIf(toNullable(quartile), metric = 'cagr_3y') AS q_cagr,
-        anyIf(toNullable(percentile), metric = 'sharpe_3y') AS pct_sharpe,
-        anyIf(toNullable(percentile), metric = 'rolling_3y_median') AS pct_roll
-    FROM fund_ranks_latest
-    GROUP BY scheme_code
-) AS rk ON rk.scheme_code = i.scheme_code
-WHERE i.fund_house != ''
-GROUP BY i.fund_house
-SETTINGS join_use_nulls = 1;
+SETTINGS join_use_nulls = 1

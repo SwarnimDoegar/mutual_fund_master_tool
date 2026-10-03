@@ -118,13 +118,12 @@ struct RunRow {
 }
 
 #[derive(Row, Deserialize)]
-struct ViewRow {
-    view: String,
+struct StepRow {
+    step: String,
     status: String,
-    #[serde(with = "clickhouse::serde::chrono::datetime::option")]
-    last_success_time: Option<DateTime<Utc>>,
-    last_success_duration_ms: Option<u64>,
-    written_rows: Option<u64>,
+    #[serde(with = "clickhouse::serde::chrono::datetime64::millis")]
+    started_at: DateTime<Utc>,
+    seconds: f64,
 }
 
 pub async fn print_status(db: &Db) -> Result<()> {
@@ -149,23 +148,25 @@ pub async fn print_status(db: &Db) -> Result<()> {
             r.details
         );
     }
-    let views: Vec<ViewRow> = db
+    // The latest run of every refresh step, in execution order.
+    let steps: Vec<StepRow> = db
         .client
         .query(
-            "SELECT view, status, last_success_time, last_success_duration_ms, written_rows
-             FROM system.view_refreshes WHERE database = currentDatabase() ORDER BY view",
+            "SELECT substring(step, 9) AS step, argMax(status, started_at) AS status,
+                    max(started_at) AS started_at,
+                    argMax(dateDiff('millisecond', started_at, finished_at), started_at) / 1000 AS seconds
+             FROM pipeline_log WHERE startsWith(step, 'refresh:') GROUP BY step ORDER BY started_at",
         )
         .fetch_all()
         .await?;
-    println!("\nViews:");
-    for v in views {
+    println!("\nRefresh steps (latest run):");
+    for s in steps {
         println!(
-            "  {:<26} {:<12} {:<20} {:>8} ms {:>12} rows",
-            v.view,
-            v.status,
-            v.last_success_time.map(|t| t.format("%Y-%m-%d %H:%M:%S").to_string()).unwrap_or("-".into()),
-            v.last_success_duration_ms.unwrap_or(0),
-            v.written_rows.unwrap_or(0)
+            "  {:<22} {:<6} {} {:>7.1}s",
+            s.step,
+            s.status,
+            s.started_at.format("%Y-%m-%d %H:%M:%S"),
+            s.seconds
         );
     }
     Ok(())

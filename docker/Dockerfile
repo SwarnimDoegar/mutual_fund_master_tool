@@ -7,7 +7,7 @@ WORKDIR /app
 # Build dependencies first so source edits don't recompile them.
 COPY Cargo.toml Cargo.lock build.rs ./
 COPY api/Cargo.toml api/Cargo.toml
-RUN mkdir -p src api/src sql/migrations \
+RUN mkdir -p src api/src \
     && echo 'fn main() {}' > src/main.rs && touch src/lib.rs \
     && echo 'fn main() {}' > api/src/main.rs && touch api/src/lib.rs \
     && cargo build --release --locked --workspace \
