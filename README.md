@@ -9,6 +9,7 @@ A read-only REST API (`api/`, crate `mf-api`) serves the tables; a web UI is the
 
 ```
 mfapi.in ──► mf (Rust) ──► ClickHouse ──► mf-api (Rust, axum) ──► clients
+                                              └──► Redis (shared response cache)
              ingest          raw:      schemes, nav (ReplacingMergeTree, idempotent)
              refresh ──────► derived:  23 refreshable MVs, recomputed in dependency order
 ```
@@ -16,7 +17,7 @@ mfapi.in ──► mf (Rust) ──► ClickHouse ──► mf-api (Rust, axum) 
 ## Quick start
 
 ```bash
-docker compose up -d            # ClickHouse + the mf scheduler + the REST API
+docker compose up -d            # ClickHouse, Redis, the mf scheduler and the REST API
 docker compose logs -f mf       # first start backfills all ~38k schemes (~7 min), then computes metrics (~75 s)
 docker compose run --rm mf status
 ```
@@ -70,10 +71,15 @@ Design notes:
 * **No SQL is built from input.** Values travel as typed ClickHouse parameters (`{code:UInt32}`);
   column names in the screener (`fields`, `sort`, `min_*`/`max_*`) must exist in `fund_metrics`
   as loaded from `system.columns`; unknown parameters are rejected with 400.
-* **Caching.** Data changes once a day. Successful GETs are cached in memory under (data
-  version, URL) and carry a weak ETag (`If-None-Match` → 304) plus
-  `Cache-Control: public, max-age=300, stale-while-revalidate=86400`. Every completed metric
-  refresh changes the data version, which invalidates all keys and ETags at once.
+* **Caching (Redis).** Data changes once a day. Successful GETs are stored in Redis under
+  `mfapi:v1:<data version>#<path>?<sorted query>`, shared by all API replicas, and carry a weak
+  ETag (`If-None-Match` → 304) plus `Cache-Control: public, max-age=300,
+  stale-while-revalidate=86400`. Every completed metric refresh changes the data version, so
+  all keys and ETags change at once; superseded entries expire via TTL (`MF_API_CACHE_TTL`,
+  26 h). Concurrent misses for one key run the query once per process. Redis is fail-open:
+  each call has a 150 ms timeout, and if Redis is down requests are served from ClickHouse
+  (`x-cache: bypass`) and `/ready` reports `cache unavailable` without failing. Redis runs as a
+  pure LRU cache (`maxmemory` `REDIS_MAXMEMORY`, no persistence) and is not exposed on the host.
 * **Least privilege.** The API connects as `mf_api` (`docker/clickhouse/users.d/mf-api.xml`):
   `SELECT` on `mf.*` only, `readonly=2`, and server-side constraints (15 s, 1 GB, 4 threads,
   500k rows per query) that clients cannot raise.
@@ -81,8 +87,9 @@ Design notes:
   request timeout, and graceful shutdown on SIGTERM. Rate limiting is left to the reverse proxy
   or CDN in front of it.
 
-API settings: `MF_API_BIND`, `MF_API_CLICKHOUSE_*`, `MF_API_CORS_ORIGINS`, `MF_API_CACHE_MB`
-(256), `MF_API_CACHE_MAX_AGE` (300), `MF_API_REQUEST_TIMEOUT` (20), `MF_API_PUBLIC_URL`.
+API settings: `MF_API_BIND`, `MF_API_CLICKHOUSE_*`, `MF_API_REDIS_URL` (empty disables the
+cache), `MF_API_CACHE_TTL` (93600), `MF_API_CACHE_MAX_AGE` (300), `MF_API_REQUEST_TIMEOUT` (20),
+`MF_API_MAX_DB_QUERIES` (16), `MF_API_CORS_ORIGINS`, `MF_API_PUBLIC_URL`.
 
 ## Commands
 
@@ -216,7 +223,7 @@ No local Rust toolchain is needed; `./dev.sh` runs cargo in the official image o
 network.
 
 ```bash
-docker compose up -d clickhouse
+docker compose up -d clickhouse redis
 ./dev.sh test --release --workspace   # unit tests, end-to-end SQL test (mf_test), API test (mf_api_test)
 ./dev.sh run --release -- daily
 ```

@@ -186,11 +186,14 @@ pub async fn health() -> impl IntoResponse {
     ([(header::CACHE_CONTROL, "no-store")], "ok")
 }
 
-/// Readiness: ClickHouse answers and holds computed metrics.
+/// Readiness: ClickHouse answers and holds computed metrics (Redis state is reported only).
 #[utoipa::path(get, path = "/ready", tag = "meta",
     responses((status = 200, description = "Ready"), (status = 503, description = "Not ready")))]
 pub async fn ready(State(state): State<AppState>) -> impl IntoResponse {
     let ok = state.db.ping().await.is_ok() && !state.version().as_of_date.is_empty();
     let status = if ok { StatusCode::OK } else { StatusCode::SERVICE_UNAVAILABLE };
-    (status, [(header::CACHE_CONTROL, "no-store")], if ok { "ready" } else { "not ready" })
+    // Redis is optional (fail-open), so it is reported but does not affect readiness.
+    let cache = if state.store.ping().await { "cache ok" } else { "cache unavailable" };
+    let body = format!("{}; {cache}", if ok { "ready" } else { "not ready" });
+    (status, [(header::CACHE_CONTROL, "no-store")], body)
 }

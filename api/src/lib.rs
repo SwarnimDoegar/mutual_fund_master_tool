@@ -7,6 +7,7 @@ pub mod docs;
 pub mod error;
 pub mod routes;
 pub mod state;
+pub mod store;
 
 use std::sync::Arc;
 use std::time::Duration;

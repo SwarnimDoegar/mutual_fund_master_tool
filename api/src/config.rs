@@ -18,9 +18,14 @@ pub struct Config {
     /// Allowed CORS origins, comma-separated, or `*` for any.
     #[arg(long, env = "MF_API_CORS_ORIGINS", default_value = "*")]
     pub cors_origins: String,
-    /// In-memory response cache size. Data changes once a day, so most requests are cache hits.
-    #[arg(long, env = "MF_API_CACHE_MB", default_value_t = 256)]
-    pub cache_mb: u64,
+    /// Redis for the shared response cache, e.g. `redis://redis:6379/0`. Empty disables caching.
+    /// Unreachable Redis is tolerated: requests are served uncached.
+    #[arg(long, env = "MF_API_REDIS_URL", default_value = "redis://localhost:6379/0")]
+    pub redis_url: String,
+    /// Lifetime of stored responses in seconds. Keys include the data version, so this only
+    /// bounds how long superseded entries linger (default 26 h, just over one daily cycle).
+    #[arg(long, env = "MF_API_CACHE_TTL", default_value_t = 93_600)]
+    pub cache_ttl: u64,
     /// `max-age` sent to browsers and CDNs, in seconds.
     #[arg(long, env = "MF_API_CACHE_MAX_AGE", default_value_t = 300)]
     pub cache_max_age: u32,

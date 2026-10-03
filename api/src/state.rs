@@ -2,13 +2,12 @@ use std::collections::BTreeMap;
 use std::sync::{Arc, RwLock};
 use std::time::Duration;
 
-use bytes::Bytes;
-use moka::future::Cache;
 use serde::Deserialize;
 
 use crate::config::Config;
 use crate::db::Db;
 use crate::error::ApiResult;
+use crate::store::ResponseStore;
 
 /// Identifies the dataset currently served. It changes when a pipeline run completes, which
 /// invalidates cached responses and ETags.
@@ -25,16 +24,10 @@ impl DataVersion {
 }
 
 #[derive(Clone)]
-pub struct CachedResponse {
-    pub content_type: String,
-    pub body: Bytes,
-}
-
-#[derive(Clone)]
 pub struct AppState {
     pub db: Db,
     pub cfg: Arc<Config>,
-    pub cache: Cache<String, CachedResponse>,
+    pub store: ResponseStore,
     version: Arc<RwLock<DataVersion>>,
     /// fund_metrics column name -> ClickHouse type (screener whitelist).
     pub metric_columns: Arc<BTreeMap<String, String>>,
@@ -43,16 +36,12 @@ pub struct AppState {
 impl AppState {
     pub async fn new(cfg: Config) -> anyhow::Result<Self> {
         let db = Db::new(&cfg);
-        let cache = Cache::builder()
-            .weigher(|k: &String, v: &CachedResponse| (k.len() + v.body.len()).try_into().unwrap_or(u32::MAX))
-            .max_capacity(cfg.cache_mb * 1024 * 1024)
-            .time_to_live(Duration::from_secs(6 * 3600))
-            .build();
+        let store = ResponseStore::new(&cfg.redis_url, cfg.cache_ttl)?;
         let metric_columns = load_columns(&db, "fund_metrics").await?;
         let state = Self {
             db,
             cfg: Arc::new(cfg),
-            cache,
+            store,
             version: Arc::new(RwLock::new(DataVersion::default())),
             metric_columns: Arc::new(metric_columns),
         };

@@ -10,7 +10,7 @@ bytes = "1.12.1"
 chrono = { version = "0.4.45", features = ["serde"] }
 clap = { version = "4.6.7", features = ["derive", "env"] }
 clickhouse = { version = "0.15.2", features = ["uuid"] }
-moka = { version = "0.12.16", features = ["future"] }
+redis = { version = "1.7.1", default-features = false, features = ["tokio-comp", "connection-manager"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = { version = "1.0.151", features = ["preserve_order", "float_roundtrip"] }
 thiserror = "2.0.21"

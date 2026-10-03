@@ -55,6 +55,18 @@ services:
     # `run` = migrate, then a daily ingest + refresh on MF_SCHEDULE (first run backfills everything).
     command: ["run"]
 
+  # Shared response cache for the API: pure LRU cache, no persistence, not published on the host.
+  redis:
+    image: redis:8.10
+    restart: unless-stopped
+    command: ["redis-server", "--maxmemory", "${REDIS_MAXMEMORY:-512mb}", "--maxmemory-policy", "allkeys-lru",
+              "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   api:
     build:
       context: .
@@ -65,8 +77,12 @@ services:
     depends_on:
       clickhouse:
         condition: service_healthy
+      redis:
+        # the API tolerates Redis being down (serves uncached), so it only needs to be started
+        condition: service_started
     environment:
       MF_API_CLICKHOUSE_URL: http://clickhouse:8123
+      MF_API_REDIS_URL: redis://redis:6379/0
       MF_API_CLICKHOUSE_USER: mf_api
       MF_API_CLICKHOUSE_PASSWORD: ${CLICKHOUSE_API_PASSWORD:-mf_api_local_password}
       MF_API_CORS_ORIGINS: ${MF_API_CORS_ORIGINS:-*}

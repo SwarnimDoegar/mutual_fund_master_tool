@@ -15,6 +15,23 @@ use tower::ServiceExt;
 
 const DB: &str = "mf_api_test";
 
+fn api_config(redis_url: String) -> mf_api::config::Config {
+    mf_api::config::Config {
+        bind: "127.0.0.1:0".parse().unwrap(),
+        clickhouse_url: std::env::var("MF_CLICKHOUSE_URL").unwrap(),
+        clickhouse_user: std::env::var("MF_CLICKHOUSE_USER").unwrap_or("mf".into()),
+        clickhouse_password: std::env::var("MF_CLICKHOUSE_PASSWORD").unwrap_or("mf_local_password".into()),
+        clickhouse_database: DB.into(),
+        cors_origins: "*".into(),
+        redis_url,
+        cache_ttl: 600,
+        cache_max_age: 300,
+        request_timeout: 20,
+        max_db_queries: 16,
+        public_url: "http://test".into(),
+    }
+}
+
 async fn setup() -> Result<Option<Router>> {
     let Ok(url) = std::env::var("MF_CLICKHOUSE_URL") else {
         eprintln!("MF_CLICKHOUSE_URL not set; skipping API tests");
@@ -41,19 +58,8 @@ async fn setup() -> Result<Option<Router>> {
     mf::testing::seed(&db).await?;
     mf::orchestration::refresh::run(&db, &Default::default(), None).await?;
 
-    let cfg = mf_api::config::Config {
-        bind: "127.0.0.1:0".parse()?,
-        clickhouse_url: url,
-        clickhouse_user: user,
-        clickhouse_password: password,
-        clickhouse_database: DB.into(),
-        cors_origins: "*".into(),
-        cache_mb: 16,
-        cache_max_age: 300,
-        request_timeout: 20,
-        public_url: "http://test".into(),
-        max_db_queries: 16,
-    };
+    let redis = std::env::var("MF_REDIS_URL").expect("MF_REDIS_URL (./dev.sh sets it) is needed for cache tests");
+    let cfg = api_config(redis);
     let (_state, app) = mf_api::build(cfg).await?;
     Ok(Some(app))
 }
@@ -179,6 +185,15 @@ async fn api_serves_correct_metrics() -> Result<()> {
     assert_eq!(second.headers["x-cache"], "hit");
     let tag = first.headers[header::ETAG].to_str().unwrap().to_string();
     assert_eq!(get_with(&app, "/v1/schemes/9004/returns", Some(&tag)).await.status, StatusCode::NOT_MODIFIED);
+
+    // Redis is shared: a second replica gets the first one's entries.
+    let replica = mf_api::build(api_config(std::env::var("MF_REDIS_URL")?)).await?.1;
+    assert_eq!(get(&replica, "/v1/schemes/9004/returns").await.headers["x-cache"], "hit");
+    // Redis down: requests are still served (uncached), never failed.
+    let no_redis = mf_api::build(api_config("redis://127.0.0.1:1/0".into())).await?.1;
+    let r = get(&no_redis, "/v1/schemes/9004/returns").await;
+    assert_eq!(r.status, StatusCode::OK);
+    assert_eq!(r.headers["x-cache"], "bypass");
 
     // --- regressions from the API review ---
     // conditional requests never turn a failing request into 304; weak comparison; Vary on 304
