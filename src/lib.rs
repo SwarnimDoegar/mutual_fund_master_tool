@@ -10,3 +10,5 @@ pub mod refresh;
 pub mod scheduler;
 pub mod sync_config;
 pub mod util;
+
+pub mod testing;

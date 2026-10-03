@@ -17,6 +17,7 @@ use crate::db::{Db, PipelineLogRow};
 /// Every refreshable view (`<name>_mv` writing into table `<name>`), in dependency order.
 pub const REFRESH_ORDER: &[&str] = &[
     "nav_glitches",
+    "nav_adjustments",
     "nav_clean",
     "scheme_info",
     "scheme_siblings",
@@ -81,6 +82,7 @@ pub async fn run(db: &Db, args: &RefreshArgs, run_id: Option<uuid::Uuid>) -> Res
         views.retain(|v| args.only.iter().any(|o| o == v));
     }
 
+    let started_all = Utc::now();
     for view in views {
         let started = Utc::now();
         let clock = Instant::now();
@@ -104,6 +106,16 @@ pub async fn run(db: &Db, args: &RefreshArgs, run_id: Option<uuid::Uuid>) -> Res
         // small hosts. Best effort: builds without jemalloc reject the command.
         let _ = db.exec("SYSTEM JEMALLOC PURGE").await;
     }
+    // Completion marker: the API derives its data version (cache keys, ETags) from this.
+    db.log_step(PipelineLogRow {
+        run_id: run_id.unwrap_or_else(uuid::Uuid::new_v4),
+        step: "refresh".into(),
+        status: "ok".into(),
+        started_at: started_all,
+        finished_at: Utc::now(),
+        details: String::new(),
+    })
+    .await?;
     Ok(())
 }
 

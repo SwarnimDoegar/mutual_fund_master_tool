@@ -79,8 +79,9 @@ memory between views.
 |---|---|---|
 | `scheme_info` | scheme | Canonical SEBI category, plan (Direct/Regular), option (Growth/IDCW/Bonus), IDCW frequency, coverage, active flag, peer eligibility |
 | `scheme_siblings` | scheme × relation | Direct↔Regular plan and IDCW→Growth option of the same scheme |
-| `nav_clean` | scheme × date | Deduplicated NAVs, glitches removed, previous NAV and return |
+| `nav_clean` | scheme × date | Deduplicated NAVs, glitches removed, restated across unit changes (`raw_nav` keeps the published NAV), previous NAV and return |
 | `nav_glitches` | scheme × date | One-day spikes that the next NAV reverses (excluded from analytics) |
+| `nav_adjustments` | scheme × date | Face-value changes and ETF unit splits (one-day ≥75% moves within ~4.7% of a factor such as ×10, ×100, 1:5, 1:50); earlier NAVs are restated by the factor |
 | `category_index` | category × plan × date | Equal-weighted category index (no survivorship bias) |
 | `benchmark_daily` | key × calendar day | Forward-filled levels: category indices, index-fund proxies, risk-free |
 | `fund_daily`, `fund_monthly` | scheme × day / month | Returns with risk-free, category and index returns over the same interval |
@@ -145,6 +146,9 @@ Formulas follow Morningstar's published methodology, which Value Research uses f
   recategorisation.
 * `inception_date` is the first NAV mfapi has (AMFI data starts April 2006), not the legal launch
   date.
+* Unit changes are recognised only when the jump is close to a split factor; a redenomination by
+  another ratio (or a 1:2 split, indistinguishable from a −50% move) is not adjusted and shows in
+  `data_quality.moves_over_10pct`.
 
 ## Configuration
 
