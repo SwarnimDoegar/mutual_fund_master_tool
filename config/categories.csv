@@ -1,0 +1,105 @@
+raw_category,asset_class,category,rankable
+Balanced,Hybrid,Balanced Hybrid Fund,1
+Children’s Fund - Childrens' Fund,Solution Oriented,Children's Fund,1
+Debt Scheme - Banking and PSU Fund,Debt,Banking and PSU Debt Fund,1
+Debt Scheme - Corporate Bond Fund,Debt,Corporate Bond Fund,1
+Debt Scheme - Credit Risk Fund,Debt,Credit Risk Fund,1
+Debt Scheme - Dynamic Bond,Debt,Dynamic Term Fund,1
+Debt Scheme - Floater Fund,Debt,Floating Interest Rates Fund,1
+Debt Scheme - Gilt Fund,Debt,Gilt Fund,1
+Debt Scheme - Gilt Fund with 10 year constant duration,Debt,10-year Constant Maturity Gilt Fund,1
+Debt Scheme - Liquid Fund,Debt,Liquid Fund,1
+Debt Scheme - Long Duration Fund,Debt,Long Term Fund,1
+Debt Scheme - Low Duration Fund,Debt,Ultra Short to Short Term Fund,1
+Debt Scheme - Medium Duration Fund,Debt,Medium Term Fund,1
+Debt Scheme - Medium to Long Duration Fund,Debt,Medium to Long Term Fund,1
+Debt Scheme - Money Market Fund,Debt,Money Market Fund,1
+Debt Scheme - Overnight Fund,Debt,Overnight Fund,1
+Debt Scheme - Short Duration Fund,Debt,Short Term Fund,1
+Debt Scheme - Ultra Short Duration Fund,Debt,Ultra Short Term Fund,1
+ELSS,Equity,ELSS - Tax Saver Fund,1
+Equity Scheme - Contra Fund,Equity,Contra Fund,1
+Equity Scheme - Dividend Yield Fund,Equity,Dividend Yield Fund,1
+Equity Scheme - ELSS,Equity,ELSS - Tax Saver Fund,1
+Equity Scheme - Flexi Cap Fund,Equity,Flexi Cap Fund,1
+Equity Scheme - Focused Fund,Equity,Focused Fund,1
+Equity Scheme - Focussed Fund,Equity,Focused Fund,1
+Equity Scheme - Large & Mid Cap Fund,Equity,Large & Mid Cap Fund,1
+Equity Scheme - Large Cap Fund,Equity,Large Cap Fund,1
+Equity Scheme - Mid Cap Fund,Equity,Mid Cap Fund,1
+Equity Scheme - Multi Cap Fund,Equity,Multi Cap Fund,1
+Equity Scheme - Sectoral/ Thematic,Equity,Sectoral/Thematic Fund,1
+Equity Scheme - Small Cap Fund,Equity,Small Cap Fund,1
+Equity Scheme - Value Fund,Equity,Value Fund,1
+Equity Schemes - Contra Fund,Equity,Contra Fund,1
+Equity Schemes - Dividend Yield Fund,Equity,Dividend Yield Fund,1
+Equity Schemes - ELSS- Tax Saver Fund,Equity,ELSS - Tax Saver Fund,1
+Equity Schemes - Flexi Cap Fund,Equity,Flexi Cap Fund,1
+Equity Schemes - Focused Fund,Equity,Focused Fund,1
+Equity Schemes - Large & Mid Cap Fund,Equity,Large & Mid Cap Fund,1
+Equity Schemes - Large Cap Fund,Equity,Large Cap Fund,1
+Equity Schemes - Mid Cap Fund,Equity,Mid Cap Fund,1
+Equity Schemes - Multi Cap Fund,Equity,Multi Cap Fund,1
+Equity Schemes - Sectoral Fund,Equity,Sectoral/Thematic Fund,1
+Equity Schemes - Small Cap Fund,Equity,Small Cap Fund,1
+Equity Schemes - Thematic Fund,Equity,Sectoral/Thematic Fund,1
+Equity Schemes - Value Fund,Equity,Value Fund,1
+Exchange Traded Funds (ETFs) - Debt ETF,Other,ETF (Debt),0
+Exchange Traded Funds (ETFs) - ETFs investing overseas,Other,ETF (Overseas),0
+Exchange Traded Funds (ETFs) - Equity ETF,Other,ETF,0
+Exchange Traded Funds (ETFs) - Gold ETF,Other,Gold ETF,0
+Exchange Traded Funds (ETFs) - Hybrid ETF,Other,ETF,0
+Exchange Traded Funds (ETFs) - Other ETF,Other,ETF,0
+Exchange Traded Funds (ETFs) - Silver ETF,Other,Silver ETF,0
+Fund of Funds Scheme (Domestic) - Fund of Funds Scheme (Domestic),Other,FoF (Domestic),0
+Gilt,Debt,Gilt Fund,1
+Hybrid Scheme - Aggressive Hybrid Fund,Hybrid,Aggressive Hybrid Fund,1
+Hybrid Scheme - Arbitrage Fund,Hybrid,Arbitrage Fund,1
+Hybrid Scheme - Balanced Hybrid Fund,Hybrid,Balanced Hybrid Fund,1
+Hybrid Scheme - Conservative Hybrid Fund,Hybrid,Conservative Hybrid Fund,1
+Hybrid Scheme - Dynamic Asset Allocation or Balanced Advantage,Hybrid,Dynamic Asset Allocation/Balanced Advantage Fund,1
+Hybrid Scheme - Equity Savings,Hybrid,Equity Savings Fund,1
+Hybrid Scheme - Multi Asset Allocation,Hybrid,Multi Asset Allocation Fund,1
+Hybrid Schemes - Aggressive Hybrid Fund,Hybrid,Aggressive Hybrid Fund,1
+Hybrid Schemes - Arbitrage Fund,Hybrid,Arbitrage Fund,1
+Hybrid Schemes - Balanced Advantage Fund/ Dynamic Asset Allocation,Hybrid,Dynamic Asset Allocation/Balanced Advantage Fund,1
+Hybrid Schemes - Balanced Hybrid Fund,Hybrid,Balanced Hybrid Fund,1
+Hybrid Schemes - Conservative Hybrid Fund,Hybrid,Conservative Hybrid Fund,1
+Hybrid Schemes - Equity Savings Fund,Hybrid,Equity Savings Fund,1
+Hybrid Schemes - Multi Asset Allocation Fund,Hybrid,Multi Asset Allocation Fund,1
+Income/Debt Oriented Schemes - 10-year Constant Maturity Gilt Fund,Debt,10-year Constant Maturity Gilt Fund,1
+Income/Debt Oriented Schemes - Banking and PSU Debt Fund,Debt,Banking and PSU Debt Fund,1
+Income/Debt Oriented Schemes - Corporate Bond Fund,Debt,Corporate Bond Fund,1
+Income/Debt Oriented Schemes - Credit Risk Fund,Debt,Credit Risk Fund,1
+Income/Debt Oriented Schemes - Dynamic Term Fund,Debt,Dynamic Term Fund,1
+Income/Debt Oriented Schemes - Fixed Term Plan,Debt,Fixed Term Plan,0
+Income/Debt Oriented Schemes - Floating Interest Rates Fund,Debt,Floating Interest Rates Fund,1
+Income/Debt Oriented Schemes - Gilt Fund,Debt,Gilt Fund,1
+Income/Debt Oriented Schemes - Liquid Fund,Debt,Liquid Fund,1
+Income/Debt Oriented Schemes - Long Term Fund,Debt,Long Term Fund,1
+Income/Debt Oriented Schemes - Medium Term Fund,Debt,Medium Term Fund,1
+Income/Debt Oriented Schemes - Medium to Long Term Fund,Debt,Medium to Long Term Fund,1
+Income/Debt Oriented Schemes - Money Market Fund,Debt,Money Market Fund,1
+Income/Debt Oriented Schemes - Other Debt Scheme,Debt,Other Debt Scheme,0
+Income/Debt Oriented Schemes - Overnight Fund,Debt,Overnight Fund,1
+Income/Debt Oriented Schemes - Sectoral Fund,Debt,Sectoral Debt Fund,1
+Income/Debt Oriented Schemes - Short Term Fund,Debt,Short Term Fund,1
+Income/Debt Oriented Schemes - Ultra Short Term Fund,Debt,Ultra Short Term Fund,1
+Income/Debt Oriented Schemes - Ultra Short to Short Term Fund,Debt,Ultra Short to Short Term Fund,1
+Index Funds - Debt Funds,Other,Index Fund (Debt),0
+Index Funds - Equity Funds,Other,Index Fund,0
+Index Funds - Hybrid Fund,Other,Index Fund (Hybrid),0
+Life Cycle Funds - Life Cycle Fund with Maturity of 10 Years,Life Cycle,Life Cycle Fund (10 Years),0
+Life Cycle Funds - Life Cycle Fund with Maturity of 15 Years,Life Cycle,Life Cycle Fund (15 Years),0
+Life Cycle Funds - Life Cycle Fund with Maturity of 5 Years,Life Cycle,Life Cycle Fund (5 Years),0
+Liquid,Debt,Liquid Fund,1
+Money Market,Debt,Money Market Fund,1
+Other Scheme - FoF Domestic,Other,FoF (Domestic),0
+Other Scheme - FoF Overseas,Other,FoF (Overseas),0
+Other Scheme - Gold ETF,Other,Gold ETF,0
+Other Scheme - Index Funds,Other,Index Fund,0
+Other Scheme - Other  ETFs,Other,ETF,0
+Overseas Fund of Funds - Fund of Funds investing overseas,Other,FoF (Overseas),0
+Solution Oriented Scheme - Children’s Fund,Solution Oriented,Children's Fund,1
+Solution Oriented Scheme - Retirement Fund,Solution Oriented,Retirement Fund,1
+Solution Oriented Schemes ** - Retirement Fund,Solution Oriented,Retirement Fund,1

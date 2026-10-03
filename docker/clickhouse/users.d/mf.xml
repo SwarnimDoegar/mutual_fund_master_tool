@@ -1,0 +1,11 @@
+<clickhouse>
+    <profiles>
+        <default>
+            <!-- The metric views sort and aggregate the full NAV history (~100M exploded rows for
+                 rolling windows). Spill early instead of hitting the server memory limit: measured
+                 peak for fund_risk drops from 2.7 GB to 1.4 GB with these thresholds. -->
+            <max_bytes_before_external_sort>200000000</max_bytes_before_external_sort>
+            <max_bytes_before_external_group_by>200000000</max_bytes_before_external_group_by>
+        </default>
+    </profiles>
+</clickhouse>

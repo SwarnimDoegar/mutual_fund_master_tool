@@ -1,0 +1,56 @@
+name: mf
+
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:26.9
+    restart: unless-stopped
+    environment:
+      CLICKHOUSE_DB: mf
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-mf}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-mf_local_password}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    ports:
+      - "127.0.0.1:${CLICKHOUSE_HTTP_PORT:-18123}:8123"
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+      - clickhouse-logs:/var/log/clickhouse-server
+      # Mount single files: the image entrypoint writes its own files into users.d.
+      - ./docker/clickhouse/config.d/mf.xml:/etc/clickhouse-server/config.d/mf.xml:ro
+      - ./docker/clickhouse/users.d/mf.xml:/etc/clickhouse-server/users.d/mf.xml:ro
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    healthcheck:
+      test: ["CMD", "clickhouse-client", "--query", "SELECT 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  mf:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: mf-pipeline:latest
+    restart: unless-stopped
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+    environment:
+      MF_CLICKHOUSE_URL: http://clickhouse:8123
+      MF_CLICKHOUSE_USER: ${CLICKHOUSE_USER:-mf}
+      MF_CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-mf_local_password}
+      MF_CLICKHOUSE_DATABASE: mf
+      MF_CONCURRENCY: ${MF_CONCURRENCY:-8}
+      MF_SCHEDULE: ${MF_SCHEDULE:-0 30 23 * * *;0 0 7 * * *}
+      MF_TIMEZONE: ${MF_TIMEZONE:-Asia/Kolkata}
+      RUST_LOG: ${RUST_LOG:-info}
+    volumes:
+      # settings.toml / categories.csv are re-read on every run; edit without rebuilding
+      - ./config:/app/config:ro
+    # `run` = migrate, then a daily ingest + refresh on MF_SCHEDULE (first run backfills everything).
+    command: ["run"]
+
+volumes:
+  clickhouse-data:
+  clickhouse-logs:

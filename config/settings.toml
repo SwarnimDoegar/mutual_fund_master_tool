@@ -1,0 +1,83 @@
+# Analytics conventions. Loaded into the ClickHouse `settings` / `benchmark_proxy` tables on
+# every pipeline run, so edits take effect on the next run without a migration.
+
+[analytics]
+# Risk-free rate. Daily/monthly risk-free returns come from the NAV of a large Direct-plan liquid
+# fund (holds paper of up to 91 days, so it tracks the 91-day T-bill that Value Research uses).
+# Before that fund's first NAV, a constant annual rate is used instead: 6.85% is the median
+# 91-day T-bill yield from 1995 to 2026.
+risk_free_proxy_scheme_code = 119800   # SBI Liquid Fund - Direct Plan - Growth (since 2013-01-01)
+risk_free_fallback_rate = 0.0685
+
+# SIP calculations: one installment on the first NAV date of every month.
+sip_monthly_amount = 10000.0
+
+# A scheme is "active" if its newest NAV is within this many days of the market's as-of date.
+active_within_days = 7
+
+# Single-day NAV glitches are dropped from analytics (kept in raw `nav`): a move of at least
+# `glitch_min_move` that the next NAV reverses to within `glitch_max_reversal`.
+glitch_min_move = 0.20
+glitch_max_reversal = 0.02
+
+# IDCW payout detection: an IDCW plan lagging its Growth sibling by at least this much on one day.
+idcw_min_gap = 0.0025
+
+# Index-fund proxies for each category's AMFI tier-1 benchmark (Direct Growth plans have the
+# lowest tracking difference). `category` must match a canonical category in categories.csv.
+# Proxies understate the index by roughly the fund's expense ratio (~0.1-0.3% a year).
+
+[[benchmark]]
+category = "Large Cap Fund"
+scheme_code = 147666
+index = "Nifty 100 TRI (via Axis Nifty 100 Index Fund)"
+
+[[benchmark]]
+category = "Large & Mid Cap Fund"
+scheme_code = 149343
+index = "Nifty LargeMidcap 250 TRI (via Edelweiss Nifty Large Midcap 250 Index Fund)"
+
+[[benchmark]]
+category = "Mid Cap Fund"
+scheme_code = 147622
+index = "Nifty Midcap 150 TRI (via Motilal Oswal Nifty Midcap 150 Index Fund)"
+
+[[benchmark]]
+category = "Small Cap Fund"
+scheme_code = 147623
+index = "Nifty Smallcap 250 TRI (via Motilal Oswal Nifty Smallcap 250 Index Fund)"
+
+[[benchmark]]
+category = "Multi Cap Fund"
+scheme_code = 152751
+index = "Nifty 500 Multicap 50:25:25 TRI (via Navi Nifty 500 Multicap 50:25:25 Index Fund)"
+
+[[benchmark]]
+category = "Flexi Cap Fund"
+scheme_code = 147625
+index = "Nifty 500 TRI (via Motilal Oswal Nifty 500 Index Fund)"
+
+[[benchmark]]
+category = "ELSS - Tax Saver Fund"
+scheme_code = 147625
+index = "Nifty 500 TRI (via Motilal Oswal Nifty 500 Index Fund)"
+
+[[benchmark]]
+category = "Focused Fund"
+scheme_code = 147625
+index = "Nifty 500 TRI (via Motilal Oswal Nifty 500 Index Fund)"
+
+[[benchmark]]
+category = "Value Fund"
+scheme_code = 147625
+index = "Nifty 500 TRI (via Motilal Oswal Nifty 500 Index Fund)"
+
+[[benchmark]]
+category = "Contra Fund"
+scheme_code = 147625
+index = "Nifty 500 TRI (via Motilal Oswal Nifty 500 Index Fund)"
+
+[[benchmark]]
+category = "Dividend Yield Fund"
+scheme_code = 147625
+index = "Nifty 500 TRI (via Motilal Oswal Nifty 500 Index Fund)"
