@@ -2,24 +2,26 @@
 
 Pulls every Indian mutual fund NAV from [mfapi.in](https://www.mfapi.in/) into ClickHouse once a
 day and computes about 250 metrics per scheme (returns, rolling returns, SIP XIRR, risk,
-drawdowns, benchmark-relative statistics, peer ranks) as **ClickHouse refreshable materialized
-views**. The Rust service only ingests data and tells ClickHouse when to recompute.
+drawdowns, benchmark-relative statistics, peer ranks) **in ClickHouse, as plain SQL**: after each
+ingest, every metric table is rebuilt from the raw NAVs with `CREATE OR REPLACE TABLE ... AS
+SELECT`. The Rust service only ingests data and runs those SQL files in order.
 
 A read-only REST API (`api/`, crate `mf-api`) serves the tables, and a Next.js web UI (`web/`) renders
 them for people.
 
 ```
-mfapi.in ──► mf (Rust) ──► ClickHouse ──► mf-api (Rust, axum) ──► clients
-                                              └──► Redis (shared response cache)
-             ingest          raw:      schemes, nav (ReplacingMergeTree, idempotent)
-             refresh ──────► derived:  23 refreshable MVs, recomputed in dependency order
+mfapi.in ──► mf (Rust) ──► ClickHouse ──► mf-api (Rust, axum) ──► web (Next.js) ──► browsers
+                                              ├──► Redis (shared response cache)
+                                              └──► other API clients
+             ingest          stored:   schemes, nav (ReplacingMergeTree, idempotent), config, rank history
+             refresh ──────► derived:  19 tables + 4 views, rebuilt from sql/derived/ in file order
 ```
 
 ## Quick start
 
 ```bash
 docker compose up -d            # ClickHouse, Redis, the mf scheduler, the REST API and the web UI
-docker compose logs -f mf       # first start backfills all ~38k schemes (~7 min), then computes metrics (~75 s)
+docker compose logs -f mf       # first start backfills all ~38k schemes (~7 min), then computes metrics (~1-2 min)
 docker compose run --rm mf status
 ```
 
@@ -136,8 +138,8 @@ robots; also a build arg), `MF_WEB_PORT` (13000).
 | `mf run` | Default container command. Migrates, backfills if never run, then runs `daily` on `MF_SCHEDULE`. |
 | `mf daily` | migrate → sync-config → ingest → refresh, logged to `pipeline_log` under one run id. |
 | `mf ingest [--codes 1,2] [--full] [--snapshot-only]` | Fetch NAVs only. |
-| `mf refresh [--from VIEW] [--only V1,V2]` | Recompute views in dependency order. |
-| `mf migrate`, `mf sync-config`, `mf status` | Schema, config tables, recent runs + view status. |
+| `mf refresh [--from STEP] [--only S1,S2]` | Rebuild the derived tables and views (`sql/derived/`, in file order). |
+| `mf migrate`, `mf sync-config`, `mf status` | Stored-table schema, config tables, recent runs + refresh step timings. |
 
 Environment: `MF_SCHEDULE` (default `0 30 23 * * *;0 0 7 * * *`, i.e. 23:30 and 07:00 in
 `MF_TIMEZONE`=Asia/Kolkata; AMFI publishes NAVs in the late evening, the morning run catches late
@@ -155,20 +157,40 @@ publishers), `MF_CONCURRENCY` (8 parallel history requests), `MF_CLICKHOUSE_*`, 
 
 ## How metrics are computed
 
-All metrics are SQL in `sql/migrations/`. Every derived table is fed by a refreshable
-materialized view `<table>_mv` that re-runs its full query and atomically swaps the result.
-`mf refresh` triggers them in the order in `src/orchestration/refresh.rs::REFRESH_ORDER` and verifies each one
-actually refreshed. Two ClickHouse behaviours (verified on 26.9) make that necessary: a manual
-`SYSTEM REFRESH VIEW` does not cascade to `DEPENDS ON` children, and a stopped view silently
-ignores `SYSTEM REFRESH VIEW` while `SYSTEM WAIT VIEW` still succeeds. The views' own schedule is
-a nominal yearly one.
+All metrics are SQL. There are two kinds of objects:
 
-A full recompute over ~35M NAV rows takes about 80 s. Peak memory per view stays under ~1.7 GB, so
-it runs on a host where ClickHouse gets ~3.5 GB. The heavy views spill sorts and aggregations to
-disk early and cap their own threads (in their SQL, because background refreshes don't pick up
-profile changes made after server start). Rolling returns use a RANGE window frame over a calendar
-key instead of an ASOF join (1.1 GB instead of 2.7 GB). The orchestrator also purges allocator
-memory between views.
+* **Stored tables** hold data that cannot be recomputed: the raw `schemes` and `nav`, the ingest
+  bookkeeping (`fetch_status`, `pipeline_log`, `scheme_nav_bounds`), the config tables and the
+  rank history `fund_ranks`. They are created by the versioned migrations in `sql/migrations/`
+  (applied ones are checksummed in `schema_history`).
+* **Derived objects** are everything else. Each one is a file `sql/derived/NNN_<name>.sql`, and
+  `mf refresh` runs the files in name order after every ingest. A table file is a single
+  `CREATE OR REPLACE TABLE <name> (columns) ENGINE = MergeTree ORDER BY ... AS SELECT ...`:
+  ClickHouse fills a temporary table and swaps it in atomically, so the API keeps reading the old
+  table until the new one is complete, and a failing query leaves the old table in place. Changing
+  a metric means editing its file; the next refresh rebuilds it. No migration, no registry.
+
+Why not materialized views: ClickHouse's incremental MVs fire on inserts and cannot express
+full-history window metrics, and refreshable MVs are a scheduler we did not want. The pipeline
+already knows when ingestion finished, so it runs the SQL directly: errors come back on the
+statement that failed, each step is logged to `pipeline_log`, and settings come from the user
+profile. (On 26.9 refreshable MVs also re-run all at once after every server restart, because a
+non-replicated database does not persist their refresh state.) The one MV kept is the
+insert-triggered `scheme_nav_bounds_ins`, which maintains each scheme's newest NAV incrementally
+for the ingester. Small rollups that are cheap to compute on demand (`category_stats`,
+`fund_house_stats`, `fund_metrics_long`, `fund_ranks_latest`) are plain views, so they are always
+consistent with the tables they read.
+
+Two details keep this safe. `CREATE TABLE ... AS SELECT` and `INSERT ... SELECT` match columns by
+position, so before each statement the refresh checks that the query's column names equal the
+table's and fails otherwise. Raw NAVs are read with `FROM nav FINAL`, which applies the
+ReplacingMergeTree's latest-ingest-wins rule at read time (much faster than a `GROUP BY`).
+
+A full rebuild over ~35M NAV rows takes about 2 minutes, most of it `fund_risk`. Peak memory per
+query stays under ~1.5 GB, so it runs on a host where ClickHouse gets ~2.5 GB: the default user
+profile (`docker/clickhouse/users.d/mf.xml`) spills sorts and aggregations to disk past 200 MB.
+Rolling returns use a RANGE window frame over a calendar key instead of an ASOF join (1.1 GB
+instead of 2.7 GB).
 
 ### Tables
 
@@ -192,9 +214,9 @@ memory between views.
 | `idcw_events` | scheme × date | IDCW payouts inferred from the Growth sibling |
 | `data_quality` | scheme | Gaps, glitches, largest moves, payouts |
 | `fund_metrics` | scheme | ~130 headline columns: the screener table. `return_basis` is `total` for Growth options and `price` for IDCW/Bonus options |
-| `fund_ranks` (+ view `fund_ranks_latest`) | date × metric × scheme | Rank, peers, percentile, quartile within category × plan; history kept |
-| `category_stats` | category × plan × metric | Mean, median, quartiles, best/worst fund |
-| `fund_house_stats` | fund house | Schemes, ranked funds, average percentile, % in top quartile |
+| `fund_ranks` (+ view `fund_ranks_latest`) | date × metric × scheme | Rank, peers, percentile, quartile within category × plan; history kept (stored table, appended by every refresh) |
+| `category_stats` (view) | category × plan × metric | Mean, median, quartiles, best/worst fund |
+| `fund_house_stats` (view) | fund house | Schemes, ranked funds, average percentile, % in top quartile |
 
 ### Conventions
 
@@ -209,12 +231,15 @@ Formulas follow Morningstar's published methodology, which Value Research uses f
 * **Sharpe** = mean(R − Rf) / stdev(R − Rf) × √ppy. **Sortino** uses the downside deviation of
   excess returns over all periods. **Alpha/beta** come from a regression of fund excess returns on
   benchmark excess returns. **Capture ratios** are annualised geometric returns in periods where the
-  benchmark is ≥ 0 (up; Morningstar Direct's definition) or < 0 (down). **Batting average** counts
-  periods the fund beat or matched the benchmark. **Calmar** = CAGR / |max drawdown|.
+  benchmark is ≥ 0 (up; Morningstar Direct's definition) or < 0 (down). The **up/down percentage
+  ratios** count periods the fund beat a benchmark that rose (> 0) or fell (< 0); flat periods are
+  neither. **Batting average** counts periods the fund beat or matched the benchmark.
+  **Calmar** = CAGR / |max drawdown|. **Skewness** and **excess kurtosis** are Excel's SKEW and
+  KURT (adjusted Fisher-Pearson estimators). **Gain/loss ratio** = total gains / total losses.
 * **Windows** are omitted rather than approximated: a daily window needs a base NAV within 10 days
   of its start (no stale price across a data gap), a monthly window needs every month, and
-  monthly SI needs contiguous months. A month counts once the market's as-of date reaches its
-  last calendar day.
+  monthly SI needs contiguous months. A month (or quarter, year, financial year) counts as complete
+  once the market's as-of date reaches its last calendar day.
 * **Drawdowns**: the peak is the latest date at the running high; recovery is the first later
   date the NAV is back at or above it. Medians and quartiles interpolate (Excel PERCENTILE.INC).
 * **Risk-free rate**: the daily NAV of SBI Liquid Fund Direct (it holds paper of up to 91 days, so
@@ -223,12 +248,19 @@ Formulas follow Morningstar's published methodology, which Value Research uses f
 * **Benchmarks**: (1) the equal-weighted category index, and (2) an index fund tracking the
   category's [AMFI tier-1 benchmark](https://www.business-standard.com/article/markets/amfi-lists-first-tier-benchmarks-for-mutual-fund-schemes-122033101156_1.html)
   (e.g. Large Cap → Nifty 100). Proxies trail the TRI by roughly their expense ratio (0.1–0.3%).
+  The category index is built on index dates (at least 3 funds and half the month's busiest day
+  published); each fund's return runs between consecutive index dates on which it has a NAV, so
+  a missed day or a rejected thin day never turns into a one-day catch-up move. Benchmark levels
+  are carried forward at most 7 days; after that the benchmark is missing and no relative
+  statistics are reported against it.
 * **Categories** follow SEBI's circular of 26 Feb 2026. AMCs report category labels in different
   formats (`Equity Scheme - Large Cap Fund` vs `Equity Schemes - Large Cap Fund`, old "Duration"
   vs new "Term" debt names); `config/categories.csv` maps all 104 labels seen to one canonical
   category.
 * **Peer groups** are category × plan, active Growth options of open-ended schemes, excluding
-  legacy share classes (Retail/Institutional) and index funds, ETFs and FoFs.
+  legacy share classes (Retail/Institutional) and index funds, ETFs and FoFs. **Percentile** is the
+  share of the other peers a fund strictly beats (ties earn no credit); **quartile** follows
+  Morningstar (percentile rank 1 = best, quartile = ⌈rank/25⌉), so the best fund is always Q1.
 * **SIP**: a fixed installment on the first NAV of each month, valued at the latest NAV; XIRR by
   ClickHouse's native `financialInternalRateOfReturnExtended` (Excel XIRR, ACT/365F).
 
@@ -269,7 +301,10 @@ docker compose up -d clickhouse redis
 `src/testing.rs` builds synthetic funds with closed-form answers. `tests/pipeline.rs` checks the
 SQL produces them: exact CAGR, SIP XIRR equal to the growth rate, beta = 1.5 and alpha = 0 by
 construction, known drawdown dates, a 5% IDCW payout, a glitch day, a too-young fund (no
-multi-year rows), a data gap (stale-start window dropped) and a ×100 face-value change.
+multi-year rows), a data gap (stale-start window dropped) and a ×100 face-value change. Edge-case funds (`seed_edge_cases`) pin
+skewness/kurtosis, the gain/loss ratio without gains, the category index across a missed day and
+a rejected thin day, peer percentiles with ties and quartiles, period completeness, the up
+percentage ratio with flat benchmark periods and a benchmark that stops publishing.
 `api/tests/api.rs` builds the real router on the same data and checks the HTTP layer: search,
 detail, calculators, screener filters and sorting, problem+json errors, caching and 304s.
 
@@ -278,6 +313,6 @@ mfapi API (no shared code) for three real funds: trailing returns, daily and mon
 volatility/Sharpe/Sortino, max drawdown with dates, beta/alpha/tracking error/up-capture against
 the index proxy, SIP XIRR and rolling medians. All 69 checks matched to floating-point precision.
 
-To add or change a metric: add a new numbered migration (applied migrations are checksummed and
-must not be edited), then add any new view to `REFRESH_ORDER`. `mf refresh` refuses to run if the
-list and the database disagree.
+To add or change a metric, edit or add a file in `sql/derived/` (the number sets its place in the
+order; it may only read objects from files with lower numbers) and run `mf refresh`. Only changes
+to the stored tables need a new migration in `sql/migrations/`.

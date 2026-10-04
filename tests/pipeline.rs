@@ -36,6 +36,7 @@ async fn setup() -> Result<Option<Db>> {
     migrate::run(&db).await?;
 
     mf::testing::seed(&db).await?;
+    mf::testing::seed_edge_cases(&db).await?;
     refresh::run(&db, &Default::default(), None).await?;
     Ok(Some(db))
 }
@@ -175,6 +176,97 @@ async fn metrics_match_closed_form_answers() -> Result<()> {
     assert_close(cagr, expected, 1e-12, "3Y CAGR across a unit change");
     let raw = scalar(&db, "SELECT raw_nav AS v FROM nav_clean WHERE scheme_code = 9010 AND date = '2023-01-02'").await?;
     assert_close(raw, calendar_growth(10.0, 0.12, d("2023-01-02")), 1e-9, "published NAV kept");
+
+    // Skewness and excess kurtosis are Excel's SKEW and KURT (adjusted Fisher-Pearson, as
+    // Morningstar uses): monthly returns [0 x 11, 0.12] give 2*sqrt(3) and exactly 12.
+    let (skew, kurt) = (
+        scalar(&db, "SELECT ifNull(skewness, nan) AS v FROM fund_risk WHERE scheme_code = 9011 AND basis = 'monthly' AND period = '1Y'").await?,
+        scalar(&db, "SELECT ifNull(excess_kurtosis, nan) AS v FROM fund_risk WHERE scheme_code = 9011 AND basis = 'monthly' AND period = '1Y'").await?,
+    );
+    assert_close(skew, 12f64.sqrt(), 1e-9, "skewness");
+    assert_close(kurt, 12.0, 1e-9, "excess kurtosis");
+
+    // Gain/loss ratio with no gains at all is 0, not NaN.
+    let gl = scalar(&db, "SELECT ifNull(gain_loss_ratio, nan) AS v FROM fund_risk WHERE scheme_code = 9012 AND basis = 'monthly' AND period = '1Y'").await?;
+    assert_eq!(gl, 0.0, "gain/loss ratio without gains");
+
+    // Category index: a fund that skips a day must not add its two-day move to one day's return.
+    // Four funds go 100 -> 110 -> 121 and the fifth 100 -> (no NAV) -> 121: the index gains 21%.
+    let [c1, _, c3] = mf::testing::catchup_days();
+    let level = |cat: &str, day: chrono::NaiveDate| {
+        format!("SELECT level AS v FROM category_index WHERE category = '{cat}' AND plan = 'Direct' AND date = '{day}'")
+    };
+    let growth = scalar(&db, &level("Mid Cap Fund", c3)).await? / scalar(&db, &level("Mid Cap Fund", c1)).await?;
+    assert_close(growth, 1.21, 1e-10, "category index across a fund's missing day");
+    // ... and a rejected thin day (3 of 10 funds) must not lose the move: 100 -> 110 for all ten.
+    let [t0, t1, t2] = mf::testing::thin_days();
+    let growth = scalar(&db, &level("Small Cap Fund", t2)).await? / scalar(&db, &level("Small Cap Fund", t0)).await?;
+    assert_close(growth, 1.10, 1e-10, "category index across a rejected day");
+    let thin = scalar(&db, &format!("SELECT toFloat64(count()) AS v FROM category_index WHERE category = 'Small Cap Fund' AND date = '{t1}'")).await?;
+    assert_eq!(thin, 0.0, "thin day is not an index date");
+
+    // Peer ranks: percentile = share of the other peers strictly beaten; quartile from it
+    // (Morningstar: percentile rank 1 = best, quartile = ceil(rank / 25)), so the best is Q1.
+    let firsts = text(
+        &db,
+        "SELECT concat(toString(min(quartile)), toString(max(quartile)), ' ', toString(min(percentile))) FROM fund_ranks_latest
+         WHERE rank = 1 AND (category, plan, metric) IN
+               (SELECT category, plan, metric FROM fund_ranks_latest WHERE rank = 1 GROUP BY ALL HAVING count() = 1)",
+    )
+    .await?;
+    assert_eq!(firsts, "11 100", "the best fund of every peer group is Q1 at the 100th percentile");
+    let worst = text(&db, "SELECT concat(toString(quartile), ' ', toString(percentile)) FROM fund_ranks_latest WHERE metric = 'volatility_3y' AND scheme_code = 9003").await?;
+    assert_eq!(worst, "4 0");
+    // STEADY and YOUNG compound at exactly 12%, so their 1Y returns tie: neither gets credit for the other.
+    let tie = text(
+        &db,
+        "SELECT arrayStringConcat(groupArray(concat(toString(rank), '/', toString(peers), ' ', toString(round(percentile, 6)))), ',')
+         FROM (SELECT * FROM fund_ranks_latest WHERE metric = 'ret_1y' AND scheme_code IN (9004, 9008) ORDER BY scheme_code)",
+    )
+    .await?;
+    let peers_sql = |cond: &str| {
+        format!(
+            "SELECT toFloat64(countIf(ret_1y {cond} (SELECT ret_1y FROM fund_metrics WHERE scheme_code = 9004))) AS v
+             FROM fund_metrics WHERE category = 'Large Cap Fund' AND plan = 'Direct' AND peer_eligible AND ret_1y IS NOT NULL"
+        )
+    };
+    let (better, worse) = (scalar(&db, &peers_sql(">")).await?, scalar(&db, &peers_sql("<")).await?);
+    assert_eq!(better + worse, 2.0, "4 peers: the tied pair plus two others");
+    let pct = format!("{}", (100.0 * worse / 3.0 * 1e6).round() / 1e6);
+    let rank = better as u32 + 1;
+    assert_eq!(tie, format!("{rank}/4 {pct},{rank}/4 {pct}"), "tied funds share a percentile counting only strictly worse peers");
+
+    // A complete period is not partial just because its last NAV came before month end: the
+    // market's as-of date (2026-09-30) has passed September, as fund_monthly already treats it.
+    let partial = text(
+        &db,
+        "SELECT arrayStringConcat(groupArray(concat(period_type, toString(is_partial))), ',') FROM
+         (SELECT * FROM fund_period_returns WHERE scheme_code = 9014
+          AND (period_type, period_start) IN (('month', '2026-09-01'), ('quarter', '2026-07-01'), ('year', '2026-01-01'))
+          ORDER BY period_type)",
+    )
+    .await?;
+    assert_eq!(partial, "month0,quarter0,year1");
+
+    // Up percentage ratio counts only periods where the benchmark rose: this fund beats the flat
+    // (forward-filled) weekend periods but never an up day.
+    let up = scalar(&db, "SELECT ifNull(up_pct_ratio, nan) AS v FROM fund_relative WHERE scheme_code = 9013 AND basis = 'daily' AND period = '1Y' AND benchmark = 'index'").await?;
+    assert_eq!(up, 0.0, "up percentage ratio");
+
+    // A benchmark that stops publishing is carried forward 7 days, then it is missing, so no
+    // benchmark-relative statistics are reported against it.
+    let last = text(&db, "SELECT toString(max(date)) FROM benchmark_daily WHERE bench_key = 'proxy|9041'").await?;
+    assert_eq!(last, "2026-07-07");
+    // The same limit applies inside a gap (last NAV Fri 27 Feb, next on 23 Mar): 27 Feb + 7 days.
+    let gap = text(
+        &db,
+        "SELECT concat(toString(max(date)), ' ', toString(count())) FROM benchmark_daily
+         WHERE bench_key = 'proxy|9041' AND date BETWEEN '2026-02-27' AND '2026-03-22'",
+    )
+    .await?;
+    assert_eq!(gap, "2026-03-06 8");
+    let stale = scalar(&db, "SELECT toFloat64(count()) AS v FROM fund_relative WHERE scheme_code = 9021 AND benchmark = 'index' AND period = '1Y'").await?;
+    assert_eq!(stale, 0.0, "relative stats against a stale benchmark");
 
     // Re-running the refresh for the same day does not duplicate rank history.
     let before = scalar(&db, "SELECT toFloat64(count()) AS v FROM fund_ranks FINAL").await?;

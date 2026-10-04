@@ -1,97 +1,86 @@
-//! Recomputes the refreshable materialized views in dependency order.
+//! Rebuilds every derived table and view from the raw tables.
 //!
-//! ClickHouse does not cascade a manual `SYSTEM REFRESH VIEW` to views that `DEPENDS ON` it, so
-//! the order lives here. A stopped view silently ignores `SYSTEM REFRESH VIEW` while
-//! `SYSTEM WAIT VIEW` still succeeds, so every step is verified via `last_success_time`.
+//! The derived layer is a list of SQL files, `sql/derived/NNN_<name>.sql`, run in file-name
+//! order. A file holds plain statements, usually one
+//! `CREATE OR REPLACE TABLE <name> (columns) ENGINE = ... AS <query>`, which ClickHouse builds
+//! in a temporary table and swaps in atomically: readers see the old table until the new one is
+//! complete, and a failed query leaves the old table untouched. A few files define plain views
+//! (`CREATE OR REPLACE VIEW`) or append to a history table (`INSERT INTO ... SELECT`).
+//!
+//! There is no other registry: adding a metric table means adding a file.
 
 use std::time::Instant;
 
 use anyhow::{Context, Result, bail};
-use chrono::{DateTime, Utc};
-use clickhouse::Row;
-use serde::Deserialize;
+use chrono::Utc;
+use include_dir::{Dir, include_dir};
 use tracing::info;
 
+use crate::db::migrate::split_statements;
 use crate::db::{Db, PipelineLogRow};
 
-/// Every refreshable view (`<name>_mv` writing into table `<name>`), in dependency order.
-pub const REFRESH_ORDER: &[&str] = &[
-    "nav_glitches",
-    "nav_adjustments",
-    "nav_clean",
-    "scheme_info",
-    "scheme_siblings",
-    "category_index",
-    "benchmark_daily",
-    "fund_daily",
-    "fund_monthly",
-    "fund_returns",
-    "fund_price_stats",
-    "fund_period_returns",
-    "fund_risk",
-    "fund_drawdowns",
-    "fund_relative",
-    "fund_rolling",
-    "fund_sip",
-    "idcw_events",
-    "data_quality",
-    "fund_metrics",
-    "fund_ranks",
-    "category_stats",
-    "fund_house_stats",
-];
+static DERIVED: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/sql/derived");
 
 #[derive(clap::Args, Debug, Clone, Default)]
 pub struct RefreshArgs {
-    /// Start at this view and continue down the order (e.g. after fixing a failure).
+    /// Start at this step and continue down the order (e.g. after fixing a failure).
     #[arg(long)]
     pub from: Option<String>,
-    /// Refresh only these views (comma-separated), still in dependency order.
+    /// Run only these steps (comma-separated), still in order.
     #[arg(long, value_delimiter = ',')]
     pub only: Vec<String>,
 }
 
-#[derive(Row, Deserialize)]
-struct ViewName {
-    view: String,
+/// One file of `sql/derived`: the step name is the file name without number and extension.
+pub struct Step {
+    pub name: String,
+    pub sql: &'static str,
 }
 
-#[derive(Row, Deserialize)]
-struct RefreshState {
-    status: String,
-    #[serde(with = "clickhouse::serde::chrono::datetime::option")]
-    last_success_time: Option<DateTime<Utc>>,
-    exception: String,
+/// All steps in execution order.
+pub fn steps() -> Result<Vec<Step>> {
+    let mut files: Vec<_> = DERIVED
+        .files()
+        .filter(|f| f.path().extension().is_some_and(|e| e == "sql"))
+        .collect();
+    files.sort_by_key(|f| f.path().to_path_buf());
+    let mut out: Vec<Step> = Vec::new();
+    for f in files {
+        let file = f.path().file_stem().unwrap().to_string_lossy();
+        let name = file
+            .split_once('_')
+            .filter(|(n, _)| n.chars().all(|c| c.is_ascii_digit()))
+            .map(|(_, name)| name.to_string())
+            .with_context(|| format!("sql/derived/{file}.sql must be named NNN_<name>.sql"))?;
+        anyhow::ensure!(!out.iter().any(|s| s.name == name), "duplicate step {name}");
+        let sql = f.contents_utf8().with_context(|| format!("{file}.sql is not UTF-8"))?;
+        out.push(Step { name, sql });
+    }
+    Ok(out)
 }
 
 pub async fn run(db: &Db, args: &RefreshArgs, run_id: Option<uuid::Uuid>) -> Result<()> {
-    check_registry(db).await?;
-
-    let mut views: Vec<&str> = REFRESH_ORDER.to_vec();
+    let mut steps = steps()?;
     if let Some(from) = &args.from {
-        let pos = views
-            .iter()
-            .position(|v| v == from)
-            .with_context(|| format!("unknown view {from}"))?;
-        views.drain(..pos);
+        let pos = steps.iter().position(|s| &s.name == from).with_context(|| format!("unknown step {from}"))?;
+        steps.drain(..pos);
     }
     if !args.only.is_empty() {
         for o in &args.only {
-            anyhow::ensure!(REFRESH_ORDER.contains(&o.as_str()), "unknown view {o}");
+            anyhow::ensure!(steps.iter().any(|s| &s.name == o), "unknown step {o}");
         }
-        views.retain(|v| args.only.iter().any(|o| o == v));
+        steps.retain(|s| args.only.contains(&s.name));
     }
 
     let started_all = Utc::now();
-    for view in views {
+    for step in steps {
         let started = Utc::now();
         let clock = Instant::now();
-        let result = refresh_one(db, view).await;
-        let elapsed = clock.elapsed();
+        let result = run_step(db, &step).await;
         if let Some(run_id) = run_id {
             db.log_step(PipelineLogRow {
                 run_id,
-                step: format!("refresh:{view}"),
+                step: format!("refresh:{}", step.name),
                 status: if result.is_ok() { "ok" } else { "error" }.into(),
                 started_at: started,
                 finished_at: Utc::now(),
@@ -99,12 +88,8 @@ pub async fn run(db: &Db, args: &RefreshArgs, run_id: Option<uuid::Uuid>) -> Res
             })
             .await?;
         }
-        result.with_context(|| format!("refreshing {view}"))?;
-        info!(view, seconds = format!("{:.1}", elapsed.as_secs_f64()), "refreshed");
-        // Return freed allocator memory to the OS before the next heavy view. ClickHouse's total
-        // memory limit tracks RSS, so retained pages from one refresh can starve the next on
-        // small hosts. Best effort: builds without jemalloc reject the command.
-        let _ = db.exec("SYSTEM JEMALLOC PURGE").await;
+        result.with_context(|| format!("refreshing {}", step.name))?;
+        info!(step = step.name, seconds = format!("{:.1}", clock.elapsed().as_secs_f64()), "refreshed");
     }
     // Completion marker: the API derives its data version (cache keys, ETags) from this.
     db.log_step(PipelineLogRow {
@@ -119,54 +104,110 @@ pub async fn run(db: &Db, args: &RefreshArgs, run_id: Option<uuid::Uuid>) -> Res
     Ok(())
 }
 
-async fn refresh_one(db: &Db, view: &str) -> Result<()> {
-    let mv = format!("`{}`.`{view}_mv`", db.database);
-    // Server clock, truncated to seconds like `last_success_time`.
-    let before: u32 = db.client.query("SELECT toUnixTimestamp(now())").fetch_one().await?;
-    db.exec(&format!("SYSTEM REFRESH VIEW {mv}")).await?;
-    db.exec(&format!("SYSTEM WAIT VIEW {mv}")).await?;
+async fn run_step(db: &Db, step: &Step) -> Result<()> {
+    for stmt in split_statements(step.sql) {
+        if let Some(fill) = Fill::parse(&stmt) {
+            check_columns(db, &fill).await?;
+        }
+        db.exec(&stmt).await?;
+    }
+    Ok(())
+}
 
-    let state: RefreshState = db
-        .client
-        .query(
-            "SELECT status, last_success_time, exception FROM system.view_refreshes
-             WHERE database = currentDatabase() AND view = ?",
-        )
-        .bind(format!("{view}_mv"))
-        .fetch_one()
-        .await?;
-    let fresh = state
-        .last_success_time
-        .is_some_and(|t| t.timestamp() >= i64::from(before));
-    if !fresh {
+/// A statement that fills a table from a query: `CREATE OR REPLACE TABLE t (columns) ... AS\n<query>`
+/// or `INSERT INTO t\n<query>` (by convention `AS` sits on its own line, one column per line).
+#[derive(Debug, PartialEq)]
+struct Fill<'a> {
+    table: &'a str,
+    /// Declared columns of a `CREATE`; `None` for an `INSERT` into an existing table.
+    columns: Option<Vec<&'a str>>,
+    query: &'a str,
+}
+
+impl<'a> Fill<'a> {
+    fn parse(stmt: &'a str) -> Option<Self> {
+        if let Some(rest) = stmt.strip_prefix("CREATE OR REPLACE TABLE ") {
+            let table = rest.split(|c: char| c.is_whitespace() || c == '(').next().filter(|w| !w.is_empty())?;
+            let (ddl, query) = rest.split_once("\nAS\n")?;
+            let (_, body) = ddl.split_once('(')?;
+            let (body, _) = body.rsplit_once("\n)")?;
+            let columns = body
+                .lines()
+                .filter_map(|l| l.split_whitespace().next())
+                .map(|c| c.trim_matches('`'))
+                .collect();
+            return Some(Self { table, columns: Some(columns), query });
+        }
+        let rest = stmt.strip_prefix("INSERT INTO ")?;
+        let (table, query) = rest.split_once('\n')?;
+        Some(Self { table: table.trim(), columns: None, query })
+    }
+}
+
+/// `CREATE TABLE ... AS SELECT` and `INSERT ... SELECT` map columns by position, not by name.
+/// Before running the statement, check that the query's column names equal the table's, so a
+/// reordered or renamed column fails the step instead of replacing a good table with bad data.
+async fn check_columns(db: &Db, fill: &Fill<'_>) -> Result<()> {
+    let table_cols: Vec<String> = match &fill.columns {
+        Some(cols) => cols.iter().map(|c| c.to_string()).collect(),
+        None => describe(db, &format!("DESCRIBE TABLE {}", fill.table)).await?,
+    };
+    let query_cols = describe(db, &format!("DESCRIBE TABLE ({})", fill.query)).await?;
+    if table_cols != query_cols {
         bail!(
-            "view did not refresh (status {}, last success {:?}){}",
-            state.status,
-            state.last_success_time,
-            if state.exception.is_empty() { String::new() } else { format!(": {}", state.exception) }
+            "columns of {} do not match its query by name:\n  table: {table_cols:?}\n  query: {query_cols:?}",
+            fill.table
         );
     }
     Ok(())
 }
 
-/// Fail fast if a refreshable view exists that the order doesn't know about, or vice versa.
-async fn check_registry(db: &Db) -> Result<()> {
-    let present: Vec<String> = db
+async fn describe(db: &Db, sql: &str) -> Result<Vec<String>> {
+    let bytes = db
         .client
-        .query("SELECT view FROM system.view_refreshes WHERE database = currentDatabase() ORDER BY view")
-        .fetch_all::<ViewName>()
-        .await?
-        .into_iter()
-        .map(|v| v.view)
-        .collect();
-    let expected: Vec<String> = REFRESH_ORDER.iter().map(|v| format!("{v}_mv")).collect();
-    let unknown: Vec<_> = present.iter().filter(|v| !expected.contains(v)).collect();
-    let missing: Vec<_> = expected.iter().filter(|v| !present.contains(v)).collect();
-    if !unknown.is_empty() || !missing.is_empty() {
-        bail!(
-            "refreshable views out of sync with REFRESH_ORDER (run `mf migrate`?): \
-             not in order list {unknown:?}, missing in database {missing:?}"
-        );
+        .query(&sql.replace('?', "??"))
+        .fetch_bytes("TabSeparated")?
+        .collect()
+        .await
+        .with_context(|| format!("describing: {}", crate::db::truncate(sql, 200)))?;
+    Ok(String::from_utf8_lossy(&bytes)
+        .lines()
+        .filter_map(|l| l.split('\t').next().map(str::to_string))
+        .collect())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn steps_are_well_formed() {
+        let steps = steps().unwrap();
+        assert!(steps.iter().any(|s| s.name == "fund_metrics"));
+        for s in &steps {
+            for stmt in split_statements(s.sql) {
+                let creates_table = stmt.starts_with("CREATE OR REPLACE TABLE ");
+                let ok = creates_table || stmt.starts_with("CREATE OR REPLACE VIEW ") || stmt.starts_with("INSERT INTO ");
+                assert!(ok, "{}: unexpected statement {}", s.name, crate::db::truncate(&stmt, 80));
+                if creates_table || stmt.starts_with("INSERT INTO ") {
+                    let fill = Fill::parse(&stmt).unwrap_or_else(|| panic!("{}: put `AS` on its own line", s.name));
+                    assert!(fill.columns.is_none_or(|c| c.len() > 1), "{}: columns not found", s.name);
+                }
+            }
+        }
     }
-    Ok(())
+
+    #[test]
+    fn parses_fill_statements() {
+        let create = "CREATE OR REPLACE TABLE t\n(\n    a UInt8,\n\n    `b` Nullable(Float64)\n)\nENGINE = MergeTree\nORDER BY a\nAS\nSELECT 1 AS a, 2. AS b";
+        assert_eq!(
+            Fill::parse(create),
+            Some(Fill { table: "t", columns: Some(vec!["a", "b"]), query: "SELECT 1 AS a, 2. AS b" })
+        );
+        assert_eq!(
+            Fill::parse("INSERT INTO h\nSELECT 1 AS a"),
+            Some(Fill { table: "h", columns: None, query: "SELECT 1 AS a" })
+        );
+        assert_eq!(Fill::parse("CREATE OR REPLACE VIEW v AS SELECT 1"), None);
+    }
 }

@@ -1,7 +1,9 @@
-//! Versioned SQL migrations embedded from `sql/migrations/NNNN_name.sql`.
+//! Versioned SQL migrations embedded from `sql/migrations/NNNN_name.sql`, for the tables that hold
+//! state (raw data, config, rank history). Derived tables and views are not migrated: `mf refresh`
+//! recreates them from `sql/derived/` on every run.
 //!
-//! Applied migrations are recorded with a checksum; editing an applied file is an error.
-//! Change views by adding a new migration that drops and recreates them.
+//! Applied migrations are recorded in `schema_history` with a checksum; editing an applied file is
+//! an error.
 
 use anyhow::{Context, Result, bail};
 use clickhouse::Row;
@@ -58,7 +60,7 @@ pub fn migrations() -> Result<Vec<Migration>> {
 
 pub async fn run(db: &Db) -> Result<()> {
     db.exec(
-        "CREATE TABLE IF NOT EXISTS schema_migrations (
+        "CREATE TABLE IF NOT EXISTS schema_history (
             version UInt32, name String, checksum String,
             applied_at DateTime64(3) DEFAULT now64(3)
         ) ENGINE = MergeTree ORDER BY version",
@@ -67,7 +69,7 @@ pub async fn run(db: &Db) -> Result<()> {
 
     let applied: Vec<Applied> = db
         .client
-        .query("SELECT version, checksum FROM schema_migrations ORDER BY version")
+        .query("SELECT version, checksum FROM schema_history ORDER BY version")
         .fetch_all()
         .await?;
 
@@ -86,7 +88,7 @@ pub async fn run(db: &Db) -> Result<()> {
         for stmt in split_statements(m.sql) {
             db.exec(&stmt).await.with_context(|| format!("in migration {}", m.name))?;
         }
-        let mut insert = db.client.insert::<AppliedInsert>("schema_migrations").await?;
+        let mut insert = db.client.insert::<AppliedInsert>("schema_history").await?;
         insert.write(&AppliedInsert { version: m.version, name: m.name.clone(), checksum }).await?;
         insert.end().await?;
     }

@@ -164,3 +164,93 @@ pub async fn seed(db: &Db) -> Result<()> {
     db.insert_all("nav", &synthetic_navs()).await?;
     Ok(())
 }
+
+// Edge-case funds for the metric-formula checks in tests/pipeline.rs (seeded on top of `seed`).
+pub const SKEW: u32 = 9011; // flat for years, then +12% in the last month: monthly returns [0 x 11, 0.12]
+pub const DECLINE: u32 = 9012; // -1% every month for the last 12 months, never a gain
+pub const WEEKEND_FLAT: u32 = 9013; // Large Cap Regular; = proxy on weekdays, gains on weekends, gives them back on Monday
+pub const FRIDAY_END: u32 = 9014; // last NAV on Fri 2026-09-25, market as-of 2026-09-30
+pub const CATCHUP: [u32; 5] = [9021, 9022, 9023, 9024, 9025]; // Mid Cap: 100 -> 110 -> 121; the last skips the middle day
+pub const THIN_DAY: [u32; 10] = [9031, 9032, 9033, 9034, 9035, 9036, 9037, 9038, 9039, 9040]; // Small Cap: only 3 of 10 publish one day
+pub const STALE_PROXY: u32 = 9041; // Mid Cap benchmark proxy with a 3-week gap; stops publishing on 2026-06-30
+
+pub fn catchup_days() -> [NaiveDate; 3] {
+    [d("2025-08-04"), d("2025-08-05"), d("2025-08-06")]
+}
+pub fn thin_days() -> [NaiveDate; 3] {
+    [d("2025-08-11"), d("2025-08-12"), d("2025-08-13")]
+}
+
+pub fn edge_case_navs() -> Vec<NavRow> {
+    let mut rows = vec![];
+    let proxy: std::collections::BTreeMap<NaiveDate, f64> =
+        synthetic_navs().into_iter().filter(|r| r.scheme_code == PROXY).map(|r| (r.date, r.nav)).collect();
+    let mut push = |code: u32, date: NaiveDate, nav: f64| rows.push(NavRow { scheme_code: code, date, nav });
+    let [c1, c2, _] = catchup_days();
+    let [t0, t1, _] = thin_days();
+    for day in business_days() {
+        push(SKEW, day, if day >= d("2026-09-01") { 11.2 } else { 10.0 });
+        // month-end NAVs fall 1% a month from October 2025 on
+        let months = (day.year() - 2025) * 12 + day.month() as i32 - 9;
+        push(DECLINE, day, 10.0 * 0.99f64.powi(months.max(0)));
+        if day <= d("2026-09-25") {
+            push(FRIDAY_END, day, calendar_growth(10.0, 0.08, day));
+        }
+        for (i, code) in CATCHUP.iter().enumerate() {
+            let nav = if day <= c1 { 100.0 } else if day == c2 { 110.0 } else { 121.0 };
+            if !(day == c2 && i == 4) {
+                push(*code, day, nav);
+            }
+        }
+        for (i, code) in THIN_DAY.iter().enumerate() {
+            let nav = if day <= t0 { 100.0 } else { 110.0 };
+            if !(day == t1 && i >= 3) {
+                push(*code, day, nav);
+            }
+        }
+        // a 3-week gap (27 Feb -> 23 Mar 2026), then it stops for good after 30 Jun 2026
+        if day <= d("2026-06-30") && !(day > d("2026-02-27") && day < d("2026-03-23")) {
+            push(STALE_PROXY, day, calendar_growth(10.0, 0.10, day));
+        }
+    }
+    // Publishes every calendar day: weekday NAVs equal the proxy's; Saturday and Sunday each gain
+    // 0.1% while the (forward-filled) benchmark is flat; Monday returns to the proxy's level.
+    let g = 1.001;
+    for day in days(start(), end()) {
+        let nav = match day.weekday() {
+            Weekday::Sat => proxy[&(day - Duration::days(1))] * g,
+            Weekday::Sun => proxy[&(day - Duration::days(2))] * g * g,
+            _ => proxy[&day],
+        };
+        push(WEEKEND_FLAT, day, nav);
+    }
+    rows
+}
+
+/// Insert the edge-case funds (after `seed`).
+pub async fn seed_edge_cases(db: &Db) -> Result<()> {
+    db.exec(
+        "INSERT INTO category_map VALUES ('Equity Scheme - Mid Cap Fund', 'Equity', 'Mid Cap Fund', 1),
+         ('Equity Scheme - Small Cap Fund', 'Equity', 'Small Cap Fund', 1)",
+    )
+    .await?;
+    db.exec("INSERT INTO benchmark_proxy VALUES ('Mid Cap Fund', 9041, 'Test Midcap 150')").await?;
+    let idx = "Other Scheme - Index Funds";
+    let mut schemes = vec![
+        scheme(SKEW, "Test Skew Index Fund - Direct Plan - Growth", idx),
+        scheme(DECLINE, "Test Decline Index Fund - Direct Plan - Growth", idx),
+        scheme(WEEKEND_FLAT, "Test Weekend Large Cap Fund - Regular Plan - Growth", "Equity Scheme - Large Cap Fund"),
+        scheme(FRIDAY_END, "Test Friday Index Fund - Direct Plan - Growth", idx),
+        scheme(STALE_PROXY, "Test Midcap 150 Index Fund - Direct Plan - Growth", idx),
+    ];
+    let words = ["Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot", "Golf", "Hotel", "India", "Juliet"];
+    for (i, code) in CATCHUP.iter().enumerate() {
+        schemes.push(scheme(*code, &format!("Test {} Mid Cap Fund - Direct Plan - Growth", words[i]), "Equity Scheme - Mid Cap Fund"));
+    }
+    for (i, code) in THIN_DAY.iter().enumerate() {
+        schemes.push(scheme(*code, &format!("Test {} Small Cap Fund - Direct Plan - Growth", words[i]), "Equity Scheme - Small Cap Fund"));
+    }
+    db.insert_all("schemes", &schemes).await?;
+    db.insert_all("nav", &edge_case_navs()).await?;
+    Ok(())
+}

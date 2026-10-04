@@ -25,13 +25,13 @@ enum Command {
     SyncConfig,
     /// Fetch NAVs (latest snapshot + any missing history) without recomputing metrics.
     Ingest(ingest::IngestArgs),
-    /// Recompute metric views in dependency order.
+    /// Rebuild the metric tables and views (sql/derived, in file order).
     Refresh(refresh::RefreshArgs),
     /// migrate + sync-config + ingest + refresh: the full daily pipeline.
     Daily(ingest::IngestArgs),
     /// Long-running scheduler: runs `daily` on MF_SCHEDULE (and immediately if never run).
     Run,
-    /// Print recent pipeline runs and view refresh status.
+    /// Print recent pipeline runs and refresh step timings.
     Status,
 }
 
