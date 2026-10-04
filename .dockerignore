@@ -1,3 +1,6 @@
 target
 .git
 *.md
+web
+.claude
+.playwright-mcp

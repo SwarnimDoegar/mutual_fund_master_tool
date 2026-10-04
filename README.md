@@ -5,7 +5,8 @@ day and computes about 250 metrics per scheme (returns, rolling returns, SIP XIR
 drawdowns, benchmark-relative statistics, peer ranks) as **ClickHouse refreshable materialized
 views**. The Rust service only ingests data and tells ClickHouse when to recompute.
 
-A read-only REST API (`api/`, crate `mf-api`) serves the tables; a web UI is the next project.
+A read-only REST API (`api/`, crate `mf-api`) serves the tables, and a Next.js web UI (`web/`) renders
+them for people.
 
 ```
 mfapi.in ──► mf (Rust) ──► ClickHouse ──► mf-api (Rust, axum) ──► clients
@@ -17,7 +18,7 @@ mfapi.in ──► mf (Rust) ──► ClickHouse ──► mf-api (Rust, axum) 
 ## Quick start
 
 ```bash
-docker compose up -d            # ClickHouse, Redis, the mf scheduler and the REST API
+docker compose up -d            # ClickHouse, Redis, the mf scheduler, the REST API and the web UI
 docker compose logs -f mf       # first start backfills all ~38k schemes (~7 min), then computes metrics (~75 s)
 docker compose run --rm mf status
 ```
@@ -32,7 +33,8 @@ curl -s 'http://localhost:18123/?user=mf&password=mf_local_password' --data-bina
    ORDER BY cagr_3y DESC LIMIT 10 FORMAT PrettyCompact"
 ```
 
-API reference: http://localhost:18080/docs (OpenAPI document at `/openapi.json`).
+Web UI: http://localhost:13000. API reference: http://localhost:18080/docs (OpenAPI document at
+`/openapi.json`).
 
 ```bash
 curl -s 'localhost:18080/v1/screener?category=Flexi%20Cap%20Fund&plan=Direct&peer_only=true&sort=-sharpe_3y_monthly&limit=5'
@@ -90,6 +92,42 @@ Design notes:
 API settings: `MF_API_BIND`, `MF_API_CLICKHOUSE_*`, `MF_API_REDIS_URL` (empty disables the
 cache), `MF_API_CACHE_TTL` (93600), `MF_API_CACHE_MAX_AGE` (300), `MF_API_REQUEST_TIMEOUT` (20),
 `MF_API_MAX_DB_QUERIES` (16), `MF_API_CORS_ORIGINS`, `MF_API_PUBLIC_URL`.
+
+## Web UI
+
+`web/` is a Next.js 16.3 app (App Router, React 19.3, Tailwind 4, TypeScript 7) that only talks to
+mf-api. Pages: home with category leaders, fund detail (growth vs category average and benchmark
+index, trailing/calendar/monthly returns, risk on daily and monthly bases, benchmark statistics,
+rolling returns, drawdowns, SIP table and calculator, lumpsum calculator, peer ranks, data quality),
+screener (filters, metric ranges, column sets, sorting), categories, fund houses, compare (up to
+six funds) and methodology. Charts use TradingView Lightweight Charts; light and dark follow the OS.
+
+* **Rendering.** [Cache Components](https://nextjs.org/docs/app/getting-started/caching) are on:
+  every page's chrome is prerendered and its data streams in at request time inside `<Suspense>`.
+  Data reads call `connection()`, so `next build` never contacts the API and the image builds
+  anywhere.
+* **Caching.** Server-side API responses are memoised with `use cache` under
+  *(data version, path)*, where the data version comes from `/v1/meta` and is re-read at most once
+  a minute. A pipeline refresh changes the version, so pages pick up new numbers within a minute
+  without any purge; mf-api's Redis cache sits behind this.
+* **Browser calls** (search-as-you-type, calculators, rolling-window switches) go through the
+  same-origin pass-through `/api/v1/*`, which forwards to `MF_API_URL` and keeps mf-api's caching
+  headers and problem+json errors.
+* **SEO.** Fund URLs carry a slug (`/funds/122639-parag-parikh-flexi-cap-fund-direct-plan-growth`;
+  any slug resolves, the canonical link points at the right one), per-page metadata, `sitemap.xml`
+  with every active scheme, and `robots.txt`.
+* **API types** are generated from `/openapi.json`: `pnpm gen:api` (commit the result).
+  TypeScript 7 has no JS API yet, so `typescript` is aliased to TypeScript 6 for ESLint and the
+  generator while `tsc` is TypeScript 7 (`@typescript/native`), as the TS 7 release notes describe.
+
+```bash
+cd web && pnpm install
+MF_API_URL=http://localhost:18080 pnpm dev      # http://localhost:3000
+pnpm typecheck && pnpm lint && pnpm build
+```
+
+Web settings: `MF_API_URL` (runtime), `SITE_URL` (public origin for canonical links, sitemap and
+robots; also a build arg), `MF_WEB_PORT` (13000).
 
 ## Commands
 

@@ -93,6 +93,24 @@ services:
     # Until the pipeline has created its tables the API exits and is restarted; /ready reports 503
     # until the first metrics are computed.
 
+  # Next.js web UI. Talks to the API over the compose network; browsers only ever reach the UI,
+  # which proxies client-side calls (search, calculators) through /api/v1.
+  web:
+    build:
+      context: web
+      args:
+        SITE_URL: ${SITE_URL:-http://localhost:13000}
+    image: mf-web:latest
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      MF_API_URL: http://api:8080
+      SITE_URL: ${SITE_URL:-http://localhost:13000}
+    ports:
+      - "127.0.0.1:${MF_WEB_PORT:-13000}:3000"
+
 volumes:
   clickhouse-data:
   clickhouse-logs:

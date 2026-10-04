@@ -1,2 +1,4 @@
 /target
 .env
+.playwright-mcp/
+.claude/worktrees/
