@@ -180,14 +180,14 @@ async fn metrics_match_closed_form_answers() -> Result<()> {
     // Skewness and excess kurtosis are Excel's SKEW and KURT (adjusted Fisher-Pearson, as
     // Morningstar uses): monthly returns [0 x 11, 0.12] give 2*sqrt(3) and exactly 12.
     let (skew, kurt) = (
-        scalar(&db, "SELECT assumeNotNull(skewness) AS v FROM fund_risk WHERE scheme_code = 9011 AND basis = 'monthly' AND period = '1Y'").await?,
-        scalar(&db, "SELECT assumeNotNull(excess_kurtosis) AS v FROM fund_risk WHERE scheme_code = 9011 AND basis = 'monthly' AND period = '1Y'").await?,
+        scalar(&db, "SELECT ifNull(skewness, nan) AS v FROM fund_risk WHERE scheme_code = 9011 AND basis = 'monthly' AND period = '1Y'").await?,
+        scalar(&db, "SELECT ifNull(excess_kurtosis, nan) AS v FROM fund_risk WHERE scheme_code = 9011 AND basis = 'monthly' AND period = '1Y'").await?,
     );
     assert_close(skew, 12f64.sqrt(), 1e-9, "skewness");
     assert_close(kurt, 12.0, 1e-9, "excess kurtosis");
 
     // Gain/loss ratio with no gains at all is 0, not NaN.
-    let gl = scalar(&db, "SELECT assumeNotNull(gain_loss_ratio) AS v FROM fund_risk WHERE scheme_code = 9012 AND basis = 'monthly' AND period = '1Y'").await?;
+    let gl = scalar(&db, "SELECT ifNull(gain_loss_ratio, nan) AS v FROM fund_risk WHERE scheme_code = 9012 AND basis = 'monthly' AND period = '1Y'").await?;
     assert_eq!(gl, 0.0, "gain/loss ratio without gains");
 
     // Category index: a fund that skips a day must not add its two-day move to one day's return.
@@ -250,13 +250,21 @@ async fn metrics_match_closed_form_answers() -> Result<()> {
 
     // Up percentage ratio counts only periods where the benchmark rose: this fund beats the flat
     // (forward-filled) weekend periods but never an up day.
-    let up = scalar(&db, "SELECT assumeNotNull(up_pct_ratio) AS v FROM fund_relative WHERE scheme_code = 9013 AND basis = 'daily' AND period = '1Y' AND benchmark = 'index'").await?;
+    let up = scalar(&db, "SELECT ifNull(up_pct_ratio, nan) AS v FROM fund_relative WHERE scheme_code = 9013 AND basis = 'daily' AND period = '1Y' AND benchmark = 'index'").await?;
     assert_eq!(up, 0.0, "up percentage ratio");
 
     // A benchmark that stops publishing is carried forward 7 days, then it is missing, so no
     // benchmark-relative statistics are reported against it.
     let last = text(&db, "SELECT toString(max(date)) FROM benchmark_daily WHERE bench_key = 'proxy|9041'").await?;
     assert_eq!(last, "2026-07-07");
+    // The same limit applies inside a gap (last NAV Fri 27 Feb, next on 23 Mar): 27 Feb + 7 days.
+    let gap = text(
+        &db,
+        "SELECT concat(toString(max(date)), ' ', toString(count())) FROM benchmark_daily
+         WHERE bench_key = 'proxy|9041' AND date BETWEEN '2026-02-27' AND '2026-03-22'",
+    )
+    .await?;
+    assert_eq!(gap, "2026-03-06 8");
     let stale = scalar(&db, "SELECT toFloat64(count()) AS v FROM fund_relative WHERE scheme_code = 9021 AND benchmark = 'index' AND period = '1Y'").await?;
     assert_eq!(stale, 0.0, "relative stats against a stale benchmark");
 

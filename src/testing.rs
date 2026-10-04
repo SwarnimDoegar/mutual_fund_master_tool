@@ -172,7 +172,7 @@ pub const WEEKEND_FLAT: u32 = 9013; // Large Cap Regular; = proxy on weekdays, g
 pub const FRIDAY_END: u32 = 9014; // last NAV on Fri 2026-09-25, market as-of 2026-09-30
 pub const CATCHUP: [u32; 5] = [9021, 9022, 9023, 9024, 9025]; // Mid Cap: 100 -> 110 -> 121; the last skips the middle day
 pub const THIN_DAY: [u32; 10] = [9031, 9032, 9033, 9034, 9035, 9036, 9037, 9038, 9039, 9040]; // Small Cap: only 3 of 10 publish one day
-pub const STALE_PROXY: u32 = 9041; // Mid Cap benchmark proxy that stops publishing on 2026-06-30
+pub const STALE_PROXY: u32 = 9041; // Mid Cap benchmark proxy with a 3-week gap; stops publishing on 2026-06-30
 
 pub fn catchup_days() -> [NaiveDate; 3] {
     [d("2025-08-04"), d("2025-08-05"), d("2025-08-06")]
@@ -208,7 +208,8 @@ pub fn edge_case_navs() -> Vec<NavRow> {
                 push(*code, day, nav);
             }
         }
-        if day <= d("2026-06-30") {
+        // a 3-week gap (27 Feb -> 23 Mar 2026), then it stops for good after 30 Jun 2026
+        if day <= d("2026-06-30") && !(day > d("2026-02-27") && day < d("2026-03-23")) {
             push(STALE_PROXY, day, calendar_growth(10.0, 0.10, day));
         }
     }

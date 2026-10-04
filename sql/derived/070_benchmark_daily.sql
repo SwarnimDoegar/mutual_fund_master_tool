@@ -1,5 +1,5 @@
 -- Every benchmark-like series as a level on every calendar day (forward-filled for at most 7 days
--- past its last observation), so a return over any fund interval (prev_date, date] is a two-key
+-- past an observation), so a return over any fund interval (prev_date, date] is a two-key
 -- lookup:
 --   'cat|<category>|<plan>' category index, 'proxy|<code>' index-fund proxy NAV,
 --   'rf' risk-free: the liquid-fund proxy NAV, extended backwards before its first NAV at the
@@ -28,22 +28,18 @@ WITH
     ),
     filled AS
     (
+        -- a level is carried forward at most 7 days past the observation it comes from (inside
+        -- a gap or after the series stops): beyond that the benchmark is missing, not flat. The
+        -- risk-free proxy is the exception (every fund return needs a risk-free return).
         SELECT cal.bench_key AS bench_key, cal.date AS date, s.level AS level
         FROM
         (
             SELECT bench_key, first_date + number AS date
-            FROM
-            (
-                -- a level is carried forward at most 7 days past the series' last observation:
-                -- after that the benchmark is missing, not flat. The risk-free proxy is the
-                -- exception (every fund return needs a risk-free return; see 'rf' below).
-                SELECT bench_key, min(date) AS first_date,
-                       if(bench_key = concat('proxy|', toString(rf_code)), d1, least(max(date) + 7, d1)) AS last_date
-                FROM source GROUP BY bench_key
-            )
-            ARRAY JOIN range(toUInt32(greatest(dateDiff('day', first_date, last_date), 0) + 1)) AS number
+            FROM (SELECT bench_key, min(date) AS first_date FROM source GROUP BY bench_key)
+            ARRAY JOIN range(toUInt32(greatest(dateDiff('day', first_date, d1), 0) + 1)) AS number
         ) AS cal
         ASOF INNER JOIN source AS s ON s.bench_key = cal.bench_key AND cal.date >= s.date
+        WHERE dateDiff('day', s.date, cal.date) <= 7 OR cal.bench_key = concat('proxy|', toString(rf_code))
     ),
     rf_proxy AS (SELECT date, level FROM filled WHERE bench_key = concat('proxy|', toString(rf_code))),
     ifNull((SELECT min(date) FROM rf_proxy), toDate(0)) AS rf_first,
