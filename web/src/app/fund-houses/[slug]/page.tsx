@@ -1,0 +1,112 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { Suspense } from "react";
+import { FundTable, Pagination } from "@/components/fund-table";
+import { Card, CardSkeleton, Empty, PageTitle, PercentileBar, Stat } from "@/components/ui";
+import { fundHouseBySlug } from "@/lib/catalog";
+import { fundRows } from "@/lib/fund-rows";
+import { date, pct } from "@/lib/format";
+import { ColumnPicker } from "@/components/column-picker";
+import { resolveColumns } from "@/lib/columns-server";
+import { PAGE_SIZE, fieldsFor } from "@/lib/screener";
+import { fundHouseHref } from "@/lib/slug";
+
+export async function generateMetadata({ params }: PageProps<"/fund-houses/[slug]">): Promise<Metadata> {
+  const h = await fundHouseBySlug((await params).slug);
+  return {
+    title: h.fund_house,
+    description: `${h.fund_house}: ${h.active_schemes} active schemes, how its ${h.ranked_funds} ranked funds compare within their categories.`,
+    alternates: { canonical: fundHouseHref(h.fund_house) },
+  };
+}
+
+export default function FundHousePage(props: PageProps<"/fund-houses/[slug]">) {
+  return (
+    <Suspense fallback={<CardSkeleton height="h-[40rem]" />}>
+      <House {...props} />
+    </Suspense>
+  );
+}
+
+type SP = Record<string, string | string[] | undefined>;
+const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
+
+async function House({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<SP> }) {
+  const h = await fundHouseBySlug((await params).slug);
+  const sp = await searchParams;
+  const sort = one(sp.sort) ?? "-cagr_3y";
+  const offset = Math.max(0, Number(one(sp.offset)) || 0);
+  const plan = one(sp.plan) === "Regular" ? "Regular" : "Direct";
+  const cols = one(sp.cols);
+  const columns = await resolveColumns(cols);
+  const href = (p: { sort?: string; offset?: number; plan?: string }) => {
+    const q = new URLSearchParams();
+    if (cols) q.set("cols", cols);
+    if ((p.plan ?? plan) !== "Direct") q.set("plan", p.plan ?? plan);
+    if ((p.sort ?? sort) !== "-cagr_3y") q.set("sort", p.sort ?? sort);
+    if (p.offset) q.set("offset", String(p.offset));
+    const qs = q.toString();
+    return `${fundHouseHref(h.fund_house)}${qs ? `?${qs}` : ""}`;
+  };
+  const { rows, total, error } = await fundRows({
+    fund_house: h.fund_house,
+    plan,
+    peer_only: true,
+    sort,
+    fields: fieldsFor(columns, sort),
+    limit: PAGE_SIZE,
+    offset,
+  });
+
+  return (
+    <div className="space-y-6">
+      <PageTitle
+        title={h.fund_house}
+        subtitle={
+          <>
+            <Link href="/fund-houses" className="hover:text-text">
+              All fund houses
+            </Link>{" "}
+            ·{" "}
+            <Link href={`/funds?fund_house=${encodeURIComponent(h.fund_house)}`} className="link">
+              Every scheme, including index funds and IDCW options
+            </Link>
+          </>
+        }
+      >
+        <nav className="seg" aria-label="Plan">
+          {["Direct", "Regular"].map((p) => (
+            <Link key={p} href={href({ plan: p, offset: 0 })} aria-current={plan === p ? "page" : undefined}>
+              {p}
+            </Link>
+          ))}
+        </nav>
+      </PageTitle>
+      <div className="card grid grid-cols-2 gap-4 p-4 sm:grid-cols-3 lg:grid-cols-6">
+        <Stat label="Active schemes">{h.active_schemes?.toLocaleString("en-IN")}</Stat>
+        <Stat label="Ranked funds">{h.ranked_funds}</Stat>
+        <Stat label="Categories">{h.categories}</Stat>
+        <Stat label="Peers beaten, 3Y return (avg)">
+          <PercentileBar value={h.avg_percentile_cagr_3y} />
+        </Stat>
+        <Stat label="Funds in top quarter">{pct(h.pct_top_quartile_cagr_3y, { digits: 0 })}</Stat>
+        <Stat label="NAV history since">{date(h.first_nav_date)}</Stat>
+      </div>
+      <Card
+        title="Ranked funds"
+        subtitle="Active Growth options in peer-ranked categories. Click a column to sort."
+        action={<ColumnPicker columns={columns} />}
+        className="min-w-0"
+      >
+        {error ? (
+          <Empty>{error}</Empty>
+        ) : (
+          <>
+            <FundTable rows={rows} columns={columns} sort={sort} sortHref={(s) => href({ sort: s, offset: 0 })} rankOffset={offset} />
+            <Pagination total={total} limit={PAGE_SIZE} offset={offset} href={(o) => href({ offset: o })} />
+          </>
+        )}
+      </Card>
+    </div>
+  );
+}

@@ -1,0 +1,136 @@
+@import "tailwindcss";
+
+/* Design tokens. Light by default, dark when the OS asks for it. Charts read the same
+   variables (src/components/charts/theme.ts), so they follow the theme too. */
+:root {
+  --bg: #f7f8fa;
+  --surface: #ffffff;
+  --surface-2: #f1f3f6;
+  --border: #e3e6eb;
+  --text: #111827;
+  --muted: #5b6474;
+  --faint: #8a93a3;
+  --brand: #2f5bea;
+  --brand-soft: #e8eefe;
+  --pos: #0f8a5f;
+  --neg: #d13b3b;
+  --warn: #b7791f;
+  --series-1: #2f5bea;
+  --series-2: #e07b24;
+  --series-3: #0f9d8a;
+  --series-4: #a23bd1;
+  --series-5: #d13b6f;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0c0f14;
+    --surface: #131820;
+    --surface-2: #1a202b;
+    --border: #262e3b;
+    --text: #e7eaf0;
+    --muted: #9aa4b5;
+    --faint: #6b7586;
+    --brand: #7a9bff;
+    --brand-soft: #1b2440;
+    --pos: #3ccf91;
+    --neg: #ff6b6b;
+    --warn: #e0a84a;
+    --series-1: #7a9bff;
+    --series-2: #f0a050;
+    --series-3: #3fd0bb;
+    --series-4: #c58af0;
+    --series-5: #ff7aa2;
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-brand: var(--brand);
+  --color-brand-soft: var(--brand-soft);
+  --color-pos: var(--pos);
+  --color-neg: var(--neg);
+  --color-warn: var(--warn);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Numbers line up in tables and stat strips. */
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+@layer components {
+  /* Page gutter: fluid width, capped only on very wide screens. */
+  .page-x {
+    @apply mx-auto w-full max-w-[120rem] px-4 sm:px-6 lg:px-8;
+  }
+  /* Full-bleed strip inside .page-x (e.g. the fund page's section bar). */
+  .bleed-x {
+    @apply -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8;
+  }
+  .card {
+    @apply rounded-xl border border-border bg-surface;
+  }
+  .card-pad {
+    @apply p-4 sm:p-5;
+  }
+  .h-section {
+    @apply text-base font-semibold tracking-tight;
+  }
+  .link {
+    @apply text-brand hover:underline underline-offset-2;
+  }
+  .table {
+    @apply w-full text-sm;
+  }
+  .table th {
+    @apply px-3 py-2 text-left text-xs font-medium text-muted whitespace-nowrap;
+  }
+  .table td {
+    @apply px-3 py-2 border-t border-border whitespace-nowrap;
+  }
+  .table .r {
+    @apply text-right;
+  }
+  .chip {
+    @apply inline-flex items-center rounded-md border border-border bg-surface-2 px-2 py-0.5 text-xs text-muted;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium hover:bg-surface-2 disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg bg-brand px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50;
+  }
+  .input {
+    @apply w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20;
+  }
+  .seg {
+    @apply inline-flex rounded-lg border border-border bg-surface-2 p-0.5 text-xs;
+  }
+  .seg > * {
+    @apply rounded-md px-2.5 py-1 text-muted hover:text-text;
+  }
+  .seg > [aria-pressed="true"],
+  .seg > [aria-current="page"] {
+    @apply bg-surface text-text shadow-sm;
+  }
+  .skeleton {
+    @apply animate-pulse rounded-md bg-surface-2;
+  }
+}
