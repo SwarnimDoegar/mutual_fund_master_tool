@@ -35,7 +35,8 @@ async function dataVersion(): Promise<string> {
   const res = await fetch(`${BASE}/v1/meta`, { headers: { accept: "application/json" } });
   if (!res.ok) throw new Error(`mf-api /v1/meta answered ${res.status}`);
   const { meta } = (await res.json()) as Envelope<unknown>;
-  return `${meta.as_of_date}|${meta.data_updated_at}`;
+  // Only a completed refresh changes this (mf-api's own cache generation works the same way).
+  return meta.data_updated_at ?? "";
 }
 
 async function fetchVersioned(version: string, path: string): Promise<Outcome> {

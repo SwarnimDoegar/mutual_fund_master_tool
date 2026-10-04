@@ -9,8 +9,10 @@ use crate::db::Db;
 use crate::error::ApiResult;
 use crate::store::ResponseStore;
 
-/// Identifies the dataset currently served. It changes when a pipeline run completes, which
-/// invalidates cached responses and ETags.
+/// Identifies the dataset currently served. It changes only when a metric refresh completes, which
+/// invalidates cached responses and ETags. `as_of_date` is informational: tables are rebuilt one by
+/// one during a refresh, so it can change before the refresh finishes (or one fails); keying the
+/// cache on it would mint a cache generation for a half-rebuilt dataset.
 #[derive(Clone, Debug, Default, Deserialize)]
 pub struct DataVersion {
     pub as_of_date: String,
@@ -19,7 +21,7 @@ pub struct DataVersion {
 
 impl DataVersion {
     pub fn tag(&self) -> String {
-        format!("{}|{}", self.as_of_date, self.updated_at)
+        self.updated_at.clone()
     }
 }
 
@@ -67,7 +69,7 @@ impl AppState {
             .await?;
         if let Some(v) = v.into_iter().next() {
             let mut cur = self.version.write().unwrap();
-            if cur.tag() != v.tag() {
+            if cur.tag() != v.tag() || cur.as_of_date != v.as_of_date {
                 tracing::info!(as_of_date = %v.as_of_date, updated_at = %v.updated_at, "serving data version");
                 *cur = v;
             }
@@ -104,4 +106,19 @@ async fn load_columns(db: &Db, table: &str) -> anyhow::Result<BTreeMap<String, S
         .map_err(|e| anyhow::anyhow!("loading columns of {table}: {e}"))?;
     anyhow::ensure!(!cols.is_empty(), "table {table} not found; has the pipeline run?");
     Ok(cols.into_iter().map(|c| (c.name, c.r#type)).collect())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::DataVersion;
+
+    #[test]
+    fn only_a_completed_refresh_changes_the_cache_generation() {
+        let before = DataVersion { as_of_date: "2026-10-01".into(), updated_at: "2026-10-03 20:08:25.414".into() };
+        // scheme_info rebuilt mid-refresh: as_of_date moves, the refresh has not finished
+        let mid = DataVersion { as_of_date: "2026-10-02".into(), ..before.clone() };
+        assert_eq!(before.tag(), mid.tag());
+        let done = DataVersion { updated_at: "2026-10-04 20:05:00.000".into(), ..mid };
+        assert_ne!(before.tag(), done.tag());
+    }
 }
