@@ -86,11 +86,11 @@ export function PercentileBar({ value }: { value: number | null | undefined }) {
   if (value == null) return <span className="text-faint">—</span>;
   const v = Math.max(0, Math.min(100, value));
   return (
-    <div className="flex items-center gap-2" title={`Better than ${v.toFixed(0)}% of peers`}>
+    <div className="flex items-center gap-2" title={`Percentile ${v.toFixed(0)} of 100 in its peer group (100 = best, Morningstar method)`}>
       <div className="h-1.5 w-24 overflow-hidden rounded-full bg-surface-2">
         <div className={clsx("h-full rounded-full", v >= 75 ? "bg-pos" : v < 25 ? "bg-neg" : "bg-brand")} style={{ width: `${v}%` }} />
       </div>
-      <span className="num w-16 text-xs text-muted">beats {v.toFixed(0)}%</span>
+      <span className="num w-14 text-xs text-muted">{v.toFixed(0)}/100</span>
     </div>
   );
 }

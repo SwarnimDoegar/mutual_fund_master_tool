@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 export default function FundHousesPage() {
   return (
     <>
-      <PageTitle title="Fund houses" subtitle="How each AMC's ranked funds do against other funds in the same category. The bars show the share of category peers its funds beat, on average (100% = best in every category)." />
+      <PageTitle title="Fund houses" subtitle="How each AMC's ranked funds do against other funds in the same category. The bars show its funds' average percentile within their categories (100 = best in every category, 0 = worst)." />
       <Suspense fallback={<CardSkeleton height="h-[40rem]" />}>
         <HouseTable />
       </Suspense>
@@ -34,8 +34,8 @@ async function HouseTable() {
               <th className="r">Active schemes</th>
               <th className="r">Ranked funds</th>
               <th className="r">Categories</th>
-              <th title="Average share of category peers beaten on 3-year CAGR">Peers beaten, 3Y return</th>
-              <th title="Average share of category peers beaten on 3-year Sharpe ratio">Peers beaten, 3Y Sharpe</th>
+              <th title="Average percentile of its funds within their categories on 3-year CAGR (100 = best)">Avg percentile, 3Y return</th>
+              <th title="Average percentile of its funds within their categories on 3-year Sharpe ratio (100 = best)">Avg percentile, 3Y Sharpe</th>
               <th className="r" title="Share of its ranked funds in the top quarter of their category on 3-year CAGR">Funds in top quarter</th>
             </tr>
           </thead>

@@ -21,7 +21,7 @@ export async function RanksCard({ s }: { s: Scheme }) {
       subtitle={
         s.category ? (
           <>
-            Against other {s.plan}-plan funds in <Link className="link" href={categoryHref(s.category)}>{s.category}</Link>. &ldquo;5/36&rdquo; = 5th best of 36; the bar shows the share of those funds this one beats (longer is better); the figure on the right is the fund&apos;s own value.
+            Against other {s.plan}-plan funds in <Link className="link" href={categoryHref(s.category)}>{s.category}</Link>. &ldquo;5/36&rdquo; = 5th best of 36. The bar is the percentile, 100 = best and 0 = worst (Morningstar&apos;s method: funds with equal values share a rank); the figure on the right is the fund&apos;s own value.
           </>
         ) : undefined
       }

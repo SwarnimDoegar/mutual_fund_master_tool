@@ -205,36 +205,42 @@ async fn metrics_match_closed_form_answers() -> Result<()> {
     let thin = scalar(&db, &format!("SELECT toFloat64(count()) AS v FROM category_index WHERE category = 'Small Cap Fund' AND date = '{t1}'")).await?;
     assert_eq!(thin, 0.0, "thin day is not an index date");
 
-    // Peer ranks: percentile = share of the other peers strictly beaten; quartile from it
-    // (Morningstar: percentile rank 1 = best, quartile = ceil(rank / 25)), so the best is Q1.
+    // Peer ranks follow Morningstar: distinct values are ranked i = 1..n, percentile rank =
+    // floor(99 (i - 1) / (n - 1) + 1) (1 = best), quartile from it; `percentile` is that scale turned
+    // round (100 = best). Every fund ranked first, tied or not, is Q1 at the 100th percentile.
     let firsts = text(
         &db,
-        "SELECT concat(toString(min(quartile)), toString(max(quartile)), ' ', toString(min(percentile))) FROM fund_ranks_latest
-         WHERE rank = 1 AND (category, plan, metric) IN
-               (SELECT category, plan, metric FROM fund_ranks_latest WHERE rank = 1 GROUP BY ALL HAVING count() = 1)",
+        "SELECT concat(toString(min(quartile)), toString(max(quartile)), ' ', toString(min(percentile)), ' ', toString(count() > 0))
+         FROM fund_ranks_latest WHERE rank = 1",
     )
     .await?;
-    assert_eq!(firsts, "11 100", "the best fund of every peer group is Q1 at the 100th percentile");
+    assert_eq!(firsts, "11 100 1", "every fund ranked first is Q1 at the 100th percentile");
     let worst = text(&db, "SELECT concat(toString(quartile), ' ', toString(percentile)) FROM fund_ranks_latest WHERE metric = 'volatility_3y' AND scheme_code = 9003").await?;
     assert_eq!(worst, "4 0");
-    // STEADY and YOUNG compound at exactly 12%, so their 1Y returns tie: neither gets credit for the other.
+    // STEADY and YOUNG compound at exactly 12%, so their 1Y returns tie: they share one rank and
+    // one percentile, computed over the distinct values.
     let tie = text(
         &db,
         "SELECT arrayStringConcat(groupArray(concat(toString(rank), '/', toString(peers), ' ', toString(round(percentile, 6)))), ',')
          FROM (SELECT * FROM fund_ranks_latest WHERE metric = 'ret_1y' AND scheme_code IN (9004, 9008) ORDER BY scheme_code)",
     )
     .await?;
-    let peers_sql = |cond: &str| {
+    let count_sql = |select: &str| {
         format!(
-            "SELECT toFloat64(countIf(ret_1y {cond} (SELECT ret_1y FROM fund_metrics WHERE scheme_code = 9004))) AS v
-             FROM fund_metrics WHERE category = 'Large Cap Fund' AND plan = 'Direct' AND peer_eligible AND ret_1y IS NOT NULL"
+            "SELECT toFloat64({select}) AS v FROM fund_metrics
+             WHERE category = 'Large Cap Fund' AND plan = 'Direct' AND peer_eligible AND ret_1y IS NOT NULL"
         )
     };
-    let (better, worse) = (scalar(&db, &peers_sql(">")).await?, scalar(&db, &peers_sql("<")).await?);
-    assert_eq!(better + worse, 2.0, "4 peers: the tied pair plus two others");
-    let pct = format!("{}", (100.0 * worse / 3.0 * 1e6).round() / 1e6);
+    let better = scalar(&db, &count_sql("countIf(ret_1y > (SELECT ret_1y FROM fund_metrics WHERE scheme_code = 9004))")).await?;
+    let distinct_better = scalar(&db, &count_sql("uniqExactIf(ret_1y, ret_1y > (SELECT ret_1y FROM fund_metrics WHERE scheme_code = 9004))")).await?;
+    let n_distinct = scalar(&db, &count_sql("uniqExact(ret_1y)")).await?;
+    let peers = scalar(&db, &count_sql("count()")).await?;
+    assert!(n_distinct < peers, "the tie reduces the number of distinct values");
+    let i = distinct_better + 1.0;
+    let pct_rank = if i == 1.0 { 1.0 } else { (99.0 * (i - 1.0) / (n_distinct - 1.0) + 1.0).floor() };
+    let pct = format!("{}", ((100.0 - pct_rank) / 99.0 * 100.0 * 1e6).round() / 1e6);
     let rank = better as u32 + 1;
-    assert_eq!(tie, format!("{rank}/4 {pct},{rank}/4 {pct}"), "tied funds share a percentile counting only strictly worse peers");
+    assert_eq!(tie, format!("{rank}/{peers} {pct},{rank}/{peers} {pct}"), "tied funds share rank and percentile");
 
     // A complete period is not partial just because its last NAV came before month end: the
     // market's as-of date (2026-09-30) has passed September, as fund_monthly already treats it.

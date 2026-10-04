@@ -86,7 +86,7 @@ async function House({ params, searchParams }: { params: Promise<{ slug: string 
         <Stat label="Active schemes">{h.active_schemes?.toLocaleString("en-IN")}</Stat>
         <Stat label="Ranked funds">{h.ranked_funds}</Stat>
         <Stat label="Categories">{h.categories}</Stat>
-        <Stat label="Peers beaten, 3Y return (avg)">
+        <Stat label="Avg percentile, 3Y return (100 = best)">
           <PercentileBar value={h.avg_percentile_cagr_3y} />
         </Stat>
         <Stat label="Funds in top quarter">{pct(h.pct_top_quartile_cagr_3y, { digits: 0 })}</Stat>

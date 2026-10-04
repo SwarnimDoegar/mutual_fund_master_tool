@@ -1,31 +1,35 @@
 -- Peer ranks within category x plan (peer_eligible schemes), appended to the rank history table
 -- (created by migration 0001). Re-running for the same as_of_date replaces that day's rows.
---   rank:       competition rank, 1 = best (ties share the better rank)
---   percentile: share of the other peers this fund strictly beats, 0-100 (100 = best); a tied
---               fund gets no credit for the funds it ties with
---   quartile:   Morningstar's percentile rank runs from 1 (best) to 100 (worst) and quartile N
---               covers ranks 25(N-1)+1 .. 25N, i.e. quartile = ceil(percentile rank / 25), with
---               the best fund always in Q1 ("Absolute Ranks, Percentile Ranks, and Fractional
---               Ranks", https://morningstardirect.morningstar.com/clientcomm/Morningstar_Methodology_Ranking_Calculations.pdf;
---               https://awgmain.morningstar.com/webhelp/glossary_definitions/mutual_fund/Percentile_Rank_in_Category.htm).
---               Here the percentile rank is 100 - percentile, so quartile = ceil(4 x share of
---               other peers not beaten), at least 1.
--- Rows written before this definition (ceil(4 x rank / peers), ties credited) are kept as they are.
+-- Morningstar's method ("Percentile Ranks, Fractional Ranks and Absolute Ranks", 2008,
+-- https://admainnew.morningstar.com/directhelp/Morningstar_Ranking_Methodologies.pdf):
+--   rank:       absolute rank, 1 = best; tied funds share the better rank (competition ranking)
+--   pct_rank:   distinct values are ranked i = 1..n (dense), pct_rank = 1 for i = 1, else
+--               floor(99 (i - 1) / (n - 1) + 1): 1 = best, 100 = worst; funds that tie share it,
+--               so funds tied for best are all 1
+--   quartile:   1 for 0 < pct_rank <= 25, 2 for <= 50, 3 for <= 75, 4 for <= 100
+--   percentile: the same scale turned round for display, 100 = best, 0 = worst
+-- Rows written before this definition are kept as they are.
 INSERT INTO fund_ranks
 SELECT
     as_of_date, metric, scheme_code, category, plan, value, rank, peers,
-    if(peers > 1, beaten / (peers - 1) * 100, 100.) AS percentile,
-    toUInt8(if(peers > 1, greatest(1, ceil(4 * (peers - 1 - beaten) / (peers - 1))), 1)) AS quartile,
+    (100 - pct_rank) / 99 * 100 AS percentile,
+    toUInt8(ceil(pct_rank / 25)) AS quartile,
     now64(3) AS computed_at
 FROM
 (
     SELECT
-        as_of_date, metric, scheme_code, category, plan, value,
-        toUInt32(rank() OVER (PARTITION BY category, plan, metric ORDER BY score DESC)) AS rank,
-        toUInt32(count() OVER (PARTITION BY category, plan, metric)) AS peers,
-        -- peers strictly worse: all peers, minus those ranked better, minus the tie group (incl. itself)
-        toInt64(peers) - (rank - 1) - toInt64(count() OVER (PARTITION BY category, plan, metric, score)) AS beaten
-    FROM (SELECT *, if(higher_is_better, value, -value) AS score FROM fund_metrics_long WHERE peer_eligible)
+        *,
+        if(drank = 1, 1., floor(99 * (drank - 1) / (n_distinct - 1) + 1)) AS pct_rank
+    FROM
+    (
+        SELECT
+            as_of_date, metric, scheme_code, category, plan, value,
+            toUInt32(rank() OVER (PARTITION BY category, plan, metric ORDER BY score DESC)) AS rank,
+            toUInt32(count() OVER (PARTITION BY category, plan, metric)) AS peers,
+            toUInt32(dense_rank() OVER (PARTITION BY category, plan, metric ORDER BY score DESC)) AS drank,
+            toUInt32(uniqExact(score) OVER (PARTITION BY category, plan, metric)) AS n_distinct
+        FROM (SELECT *, if(higher_is_better, value, -value) AS score FROM fund_metrics_long WHERE peer_eligible)
+    )
 );
 
 -- The latest day's ranks.

@@ -53,8 +53,9 @@ const CONVENTIONS: [string, React.ReactNode][] = [
     "Peer groups and ranks",
     <>
       SEBI category × plan (Direct or Regular), active Growth options of open-ended schemes, excluding legacy share classes, index
-      funds, ETFs and FoFs. Rank 1 is best in the metric&apos;s own direction (lower is better for volatility and drawdowns).
-      Percentile is the share of peers a fund beats.
+      funds, ETFs and FoFs. Rank 1 is best in the metric&apos;s own direction (lower is better for volatility and drawdowns);
+      funds with equal values share a rank. Percentiles and quartiles follow Morningstar: distinct values are ranked, the
+      percentile runs from 100 (best) to 0 (worst), and Q1 is the best quarter.
     </>,
   ],
   [
