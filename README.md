@@ -192,12 +192,15 @@ Formulas follow Morningstar's published methodology, which Value Research uses f
 * **Sharpe** = mean(R − Rf) / stdev(R − Rf) × √ppy. **Sortino** uses the downside deviation of
   excess returns over all periods. **Alpha/beta** come from a regression of fund excess returns on
   benchmark excess returns. **Capture ratios** are annualised geometric returns in periods where the
-  benchmark is ≥ 0 (up; Morningstar Direct's definition) or < 0 (down). **Batting average** counts
-  periods the fund beat or matched the benchmark. **Calmar** = CAGR / |max drawdown|.
+  benchmark is ≥ 0 (up; Morningstar Direct's definition) or < 0 (down). The **up/down percentage
+  ratios** count periods the fund beat a benchmark that rose (> 0) or fell (< 0); flat periods are
+  neither. **Batting average** counts periods the fund beat or matched the benchmark.
+  **Calmar** = CAGR / |max drawdown|. **Skewness** and **excess kurtosis** are Excel's SKEW and
+  KURT (adjusted Fisher-Pearson estimators). **Gain/loss ratio** = total gains / total losses.
 * **Windows** are omitted rather than approximated: a daily window needs a base NAV within 10 days
   of its start (no stale price across a data gap), a monthly window needs every month, and
-  monthly SI needs contiguous months. A month counts once the market's as-of date reaches its
-  last calendar day.
+  monthly SI needs contiguous months. A month (or quarter, year, financial year) counts as complete
+  once the market's as-of date reaches its last calendar day.
 * **Drawdowns**: the peak is the latest date at the running high; recovery is the first later
   date the NAV is back at or above it. Medians and quartiles interpolate (Excel PERCENTILE.INC).
 * **Risk-free rate**: the daily NAV of SBI Liquid Fund Direct (it holds paper of up to 91 days, so
@@ -206,12 +209,19 @@ Formulas follow Morningstar's published methodology, which Value Research uses f
 * **Benchmarks**: (1) the equal-weighted category index, and (2) an index fund tracking the
   category's [AMFI tier-1 benchmark](https://www.business-standard.com/article/markets/amfi-lists-first-tier-benchmarks-for-mutual-fund-schemes-122033101156_1.html)
   (e.g. Large Cap → Nifty 100). Proxies trail the TRI by roughly their expense ratio (0.1–0.3%).
+  The category index is built on index dates (at least 3 funds and half the month's busiest day
+  published); each fund's return runs between consecutive index dates on which it has a NAV, so
+  a missed day or a rejected thin day never turns into a one-day catch-up move. Benchmark levels
+  are carried forward at most 7 days; after that the benchmark is missing and no relative
+  statistics are reported against it.
 * **Categories** follow SEBI's circular of 26 Feb 2026. AMCs report category labels in different
   formats (`Equity Scheme - Large Cap Fund` vs `Equity Schemes - Large Cap Fund`, old "Duration"
   vs new "Term" debt names); `config/categories.csv` maps all 104 labels seen to one canonical
   category.
 * **Peer groups** are category × plan, active Growth options of open-ended schemes, excluding
-  legacy share classes (Retail/Institutional) and index funds, ETFs and FoFs.
+  legacy share classes (Retail/Institutional) and index funds, ETFs and FoFs. **Percentile** is the
+  share of the other peers a fund strictly beats (ties earn no credit); **quartile** follows
+  Morningstar (percentile rank 1 = best, quartile = ⌈rank/25⌉), so the best fund is always Q1.
 * **SIP**: a fixed installment on the first NAV of each month, valued at the latest NAV; XIRR by
   ClickHouse's native `financialInternalRateOfReturnExtended` (Excel XIRR, ACT/365F).
 
@@ -252,7 +262,10 @@ docker compose up -d clickhouse redis
 `src/testing.rs` builds synthetic funds with closed-form answers. `tests/pipeline.rs` checks the
 SQL produces them: exact CAGR, SIP XIRR equal to the growth rate, beta = 1.5 and alpha = 0 by
 construction, known drawdown dates, a 5% IDCW payout, a glitch day, a too-young fund (no
-multi-year rows), a data gap (stale-start window dropped) and a ×100 face-value change.
+multi-year rows), a data gap (stale-start window dropped) and a ×100 face-value change. Edge-case funds (`seed_edge_cases`) pin
+skewness/kurtosis, the gain/loss ratio without gains, the category index across a missed day and
+a rejected thin day, peer percentiles with ties and quartiles, period completeness, the up
+percentage ratio with flat benchmark periods and a benchmark that stops publishing.
 `api/tests/api.rs` builds the real router on the same data and checks the HTTP layer: search,
 detail, calculators, screener filters and sorting, problem+json errors, caching and 304s.
 

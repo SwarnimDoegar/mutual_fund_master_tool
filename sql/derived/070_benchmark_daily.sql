@@ -1,5 +1,6 @@
--- Every benchmark-like series as a level on every calendar day (forward-filled), so a return
--- over any fund interval (prev_date, date] is a two-key lookup:
+-- Every benchmark-like series as a level on every calendar day (forward-filled for at most 7 days
+-- past its last observation), so a return over any fund interval (prev_date, date] is a two-key
+-- lookup:
 --   'cat|<category>|<plan>' category index, 'proxy|<code>' index-fund proxy NAV,
 --   'rf' risk-free: the liquid-fund proxy NAV, extended backwards before its first NAV at the
 --        configured fallback rate (or entirely synthetic if no proxy is configured).
@@ -31,8 +32,16 @@ WITH
         FROM
         (
             SELECT bench_key, first_date + number AS date
-            FROM (SELECT bench_key, min(date) AS first_date FROM source GROUP BY bench_key)
-            ARRAY JOIN range(toUInt32(greatest(dateDiff('day', first_date, d1), 0) + 1)) AS number
+            FROM
+            (
+                -- a level is carried forward at most 7 days past the series' last observation:
+                -- after that the benchmark is missing, not flat. The risk-free proxy is the
+                -- exception (every fund return needs a risk-free return; see 'rf' below).
+                SELECT bench_key, min(date) AS first_date,
+                       if(bench_key = concat('proxy|', toString(rf_code)), d1, least(max(date) + 7, d1)) AS last_date
+                FROM source GROUP BY bench_key
+            )
+            ARRAY JOIN range(toUInt32(greatest(dateDiff('day', first_date, last_date), 0) + 1)) AS number
         ) AS cal
         ASOF INNER JOIN source AS s ON s.bench_key = cal.bench_key AND cal.date >= s.date
     ),

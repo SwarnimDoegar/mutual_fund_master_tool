@@ -24,7 +24,7 @@ CREATE OR REPLACE TABLE fund_relative
     down_capture        Nullable(Float64),
     capture_ratio       Nullable(Float64),
     batting_average     Float64,
-    up_pct_ratio        Nullable(Float64),       -- share of up-benchmark periods the fund beat
+    up_pct_ratio        Nullable(Float64),       -- share of periods with a rising benchmark (> 0) the fund beat
     down_pct_ratio      Nullable(Float64)        -- share of down-benchmark periods the fund beat
 )
 ENGINE = MergeTree
@@ -97,7 +97,10 @@ WITH
             sumIf(log1p(r), bm < 0) AS lg_f_down,
             sumIf(log1p(bm), bm < 0) AS lg_b_down,
             countIf(r >= bm) AS n_beat_or_match,
-            countIf(r > bm AND bm >= 0) AS n_beat_up,
+            -- up percentage ratio: periods the benchmark rose (> 0; flat periods are neither up nor
+            -- down), unlike up capture, which uses >= 0 (Morningstar custom calculations, p. 29)
+            countIf(bm > 0) AS n_rise,
+            countIf(r > bm AND bm > 0) AS n_beat_up,
             countIf(r > bm AND bm < 0) AS n_beat_down
         FROM paired
         GROUP BY scheme_code, basis, period, benchmark
@@ -136,7 +139,7 @@ FROM
         if(bench_down != 0, fund_down / bench_down, NULL) AS down_capture,
         if(down_capture > 0, up_capture / down_capture, NULL) AS capture_ratio,
         n_beat_or_match / n AS batting_average,
-        if(n_up > 0, n_beat_up / n_up, NULL) AS up_pct_ratio,
+        if(n_rise > 0, n_beat_up / n_rise, NULL) AS up_pct_ratio,
         if(n_down > 0, n_beat_down / n_down, NULL) AS down_pct_ratio
     FROM stats
 )

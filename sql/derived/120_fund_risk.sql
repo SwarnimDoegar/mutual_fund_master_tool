@@ -133,8 +133,14 @@ FROM
         if(downside_deviation > 0, avg(excess) * periods_per_year / downside_deviation, NULL) AS sortino,
         if(max_drawdown < 0, cagr / abs(max_drawdown), NULL) AS calmar,
         if(sumIf(excess, excess < 0) < 0, sumIf(excess, excess > 0) / -sumIf(excess, excess < 0), NULL) AS omega,
-        if(count() >= 3, skewSamp(ret), NULL) AS skewness,
-        if(count() >= 4, kurtSamp(ret) - 3, NULL) AS excess_kurtosis,
+        -- Excel SKEW / KURT (adjusted Fisher-Pearson, as Morningstar uses). With z = (x - mean) / s
+        -- (sample stdev): skew = n / ((n-1)(n-2)) sum z^3 and excess kurtosis =
+        -- n(n+1) / ((n-1)(n-2)(n-3)) sum z^4 - 3(n-1)^2 / ((n-2)(n-3)). ClickHouse's skewSamp and
+        -- kurtSamp are the mean of z^3 and z^4, i.e. sum z^k / n.
+        if(count() >= 3, count() * count() / ((count() - 1) * (count() - 2)) * skewSamp(ret), NULL) AS skewness,
+        if(count() >= 4,
+           count() * count() * (count() + 1) / ((count() - 1) * (count() - 2) * (count() - 3)) * kurtSamp(ret)
+             - 3 * (count() - 1) * (count() - 1) / ((count() - 2) * (count() - 3)), NULL) AS excess_kurtosis,
         -- historical VaR keeps every return in memory, so it is limited to the windows where it is
         -- meaningful: daily 1Y/3Y/5Y and all monthly windows
         basis = 'monthly' OR period IN ('1Y', '3Y', '5Y') AS has_var,
@@ -149,8 +155,8 @@ FROM
         min(ret) AS worst_period,
         argMin(date, ret) AS worst_period_date,
         countIf(ret > 0) / count() AS pct_positive,
-        if(countIf(ret < 0) > 0 AND avgIf(ret, ret < 0) < 0,
-           (avgIf(ret, ret > 0) / abs(avgIf(ret, ret < 0))) * (countIf(ret > 0) / countIf(ret < 0)), NULL) AS gain_loss_ratio,
+        -- total gains over total losses (= mean gain / mean loss x #gains / #losses); 0 without gains
+        if(sumIf(ret, ret < 0) < 0, sumIf(ret, ret > 0) / -sumIf(ret, ret < 0), NULL) AS gain_loss_ratio,
         min(dd) AS max_drawdown,
         argMin(peak_date, dd) AS mdd_peak_date,
         argMin(date, dd) AS mdd_trough_date,

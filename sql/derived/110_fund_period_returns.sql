@@ -25,8 +25,12 @@ SELECT
     p.end_date AS end_date,
     p.end_nav AS end_nav,
     end_nav / start_nav - 1 AS ret,
+    -- the scheme's latest period is complete once its last calendar day is reached: by the
+    -- scheme's own NAV, or (active schemes) by the market's as-of date, as in fund_monthly. A
+    -- year whose last NAV is Friday 30 Dec is complete once the market reaches 31 Dec.
     toUInt8(NOT consecutive
-            OR (p.end_date = i.last_nav_date AND p.period_end > i.last_nav_date)) AS is_partial
+            OR (p.end_date = i.last_nav_date AND p.period_end > i.last_nav_date
+                AND NOT (i.is_active AND p.period_end <= i.as_of_date))) AS is_partial
 FROM
 (
     SELECT
