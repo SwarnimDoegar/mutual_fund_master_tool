@@ -78,8 +78,12 @@ pub async fn run_forever(db: &Db, settings: &Settings) -> Result<()> {
     anyhow::ensure!(!schedules.is_empty(), "MF_SCHEDULE is empty");
 
     migrate::run(db).await?;
+    // A first run always happens (it is the backfill); later starts sync too unless disabled.
     if !has_successful_run(db).await? {
         info!("no successful pipeline run yet; starting initial backfill now");
+        let _ = daily(db, settings, &IngestArgs::default()).await;
+    } else if settings.run_on_start {
+        info!("syncing on startup (MF_RUN_ON_START=false to wait for the schedule)");
         let _ = daily(db, settings, &IngestArgs::default()).await;
     }
 

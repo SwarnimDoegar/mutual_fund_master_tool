@@ -68,10 +68,25 @@ impl AppState {
             .typed()
             .await?;
         if let Some(v) = v.into_iter().next() {
-            let mut cur = self.version.write().unwrap();
-            if cur.tag() != v.tag() || cur.as_of_date != v.as_of_date {
-                tracing::info!(as_of_date = %v.as_of_date, updated_at = %v.updated_at, "serving data version");
-                *cur = v;
+            let new_generation = {
+                let mut cur = self.version.write().unwrap();
+                let changed = cur.tag() != v.tag();
+                if changed || cur.as_of_date != v.as_of_date {
+                    tracing::info!(as_of_date = %v.as_of_date, updated_at = %v.updated_at, "serving data version");
+                    *cur = v.clone();
+                }
+                changed
+            };
+            if new_generation {
+                // Responses of earlier versions can no longer be read; free their memory now.
+                let store = self.store.clone();
+                let tag = v.tag();
+                tokio::spawn(async move {
+                    let removed = store.purge_other_versions(&tag).await;
+                    if removed > 0 {
+                        tracing::info!(removed, "purged cached responses of earlier data versions");
+                    }
+                });
             }
         }
         Ok(())

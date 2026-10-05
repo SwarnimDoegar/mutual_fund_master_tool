@@ -48,11 +48,13 @@ services:
       MF_CONCURRENCY: ${MF_CONCURRENCY:-8}
       MF_SCHEDULE: ${MF_SCHEDULE:-0 30 23 * * *;0 0 7 * * *}
       MF_TIMEZONE: ${MF_TIMEZONE:-Asia/Kolkata}
+      MF_RUN_ON_START: ${MF_RUN_ON_START:-true}
       RUST_LOG: ${RUST_LOG:-info}
     volumes:
       # settings.toml / categories.csv are re-read on every run; edit without rebuilding
       - ./config:/app/config:ro
-    # `run` = migrate, then a daily ingest + refresh on MF_SCHEDULE (first run backfills everything).
+    # `run` = migrate, sync once at startup (the first run backfills everything), then ingest +
+    # refresh on MF_SCHEDULE.
     command: ["run"]
 
   # Shared response cache for the API: pure LRU cache, no persistence, not published on the host.

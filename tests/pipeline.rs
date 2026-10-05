@@ -28,6 +28,7 @@ async fn setup() -> Result<Option<Db>> {
         concurrency: 1,
         schedule: String::new(),
         timezone: "UTC".into(),
+        run_on_start: false,
         config_dir: PathBuf::from("config"),
     };
     let db = Db::connect(&settings).await?;

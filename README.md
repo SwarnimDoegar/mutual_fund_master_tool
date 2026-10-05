@@ -79,8 +79,9 @@ Design notes:
   `mfapi:v1:<data version>#<path>?<sorted query>`, shared by all API replicas, and carry a weak
   ETag (`If-None-Match` → 304) plus `Cache-Control: public, max-age=300,
   stale-while-revalidate=86400`. Every completed metric refresh changes the data version, so
-  all keys and ETags change at once; superseded entries expire via TTL (`MF_API_CACHE_TTL`,
-  26 h). Concurrent misses for one key run the query once per process. Redis is fail-open:
+  all keys and ETags change at once. The first API instance to see a new version deletes the
+  other versions' entries (`SCAN` + `UNLINK`, non-blocking); the TTL (`MF_API_CACHE_TTL`, 26 h)
+  remains as a backstop. Concurrent misses for one key run the query once per process. Redis is fail-open:
   each call has a 150 ms timeout, and if Redis is down requests are served from ClickHouse
   (`x-cache: bypass`) and `/ready` reports `cache unavailable` without failing. Redis runs as a
   pure LRU cache (`maxmemory` `REDIS_MAXMEMORY`, no persistence) and is not exposed on the host.
@@ -135,7 +136,7 @@ robots; also a build arg), `MF_WEB_PORT` (13000).
 
 | Command | What it does |
 |---|---|
-| `mf run` | Default container command. Migrates, backfills if never run, then runs `daily` on `MF_SCHEDULE`. |
+| `mf run` | Default container command. Migrates, runs `daily` once at startup (the backfill on a fresh database), then on `MF_SCHEDULE`. |
 | `mf daily` | migrate → sync-config → ingest → refresh, logged to `pipeline_log` under one run id. |
 | `mf ingest [--codes 1,2] [--full] [--snapshot-only]` | Fetch NAVs only. |
 | `mf refresh [--from STEP] [--only S1,S2]` | Rebuild the derived tables and views (`sql/derived/`, in file order). |
@@ -143,7 +144,9 @@ robots; also a build arg), `MF_WEB_PORT` (13000).
 
 Environment: `MF_SCHEDULE` (default `0 30 23 * * *;0 0 7 * * *`, i.e. 23:30 and 07:00 in
 `MF_TIMEZONE`=Asia/Kolkata; AMFI publishes NAVs in the late evening, the morning run catches late
-publishers), `MF_CONCURRENCY` (8 parallel history requests), `MF_CLICKHOUSE_*`, `RUST_LOG`.
+publishers), `MF_RUN_ON_START` (default `true`: sync when the scheduler starts; `false` waits for
+the first scheduled slot, except on a fresh database), `MF_CONCURRENCY` (8 parallel history
+requests), `MF_CLICKHOUSE_*`, `RUST_LOG`.
 
 ## How ingestion works
 

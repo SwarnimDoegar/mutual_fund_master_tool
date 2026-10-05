@@ -58,6 +58,8 @@ impl CacheStatus {
 const KEY_PREFIX: &str = "mfapi:v1:";
 /// Redis is local and the request path waits on it, so keep this tight.
 const OP_TIMEOUT: Duration = Duration::from_millis(150);
+/// Per-command limit for the background purge (not on a request path).
+const PURGE_TIMEOUT: Duration = Duration::from_secs(5);
 /// Bodies above this are served but not stored (the largest real response is ~200 KB).
 const MAX_STORED_BODY: usize = 8 * 1024 * 1024;
 
@@ -178,6 +180,48 @@ impl ResponseStore {
             Ok(Ok(())) => {}
             Ok(Err(e)) => tracing::warn!(error = %e, "redis SET failed"),
             Err(_) => tracing::warn!("redis SET timed out"),
+        }
+    }
+
+    /// Deletes every stored response that belongs to a data version other than `version`.
+    /// Superseded entries would expire through their TTL anyway; this frees the memory as soon
+    /// as a refresh is published. SCAN + UNLINK never block Redis, and every replica may run it
+    /// (deleting is idempotent). Returns the number of keys removed.
+    pub async fn purge_other_versions(&self, version: &str) -> u64 {
+        let Some(conn) = &self.conn else { return 0 };
+        let mut conn = conn.clone();
+        let keep = Self::key(version, "");
+        let mut cursor: u64 = 0;
+        let mut removed = 0;
+        loop {
+            let mut scan = redis::cmd("SCAN");
+            scan.arg(cursor).arg("MATCH").arg(format!("{KEY_PREFIX}*")).arg("COUNT").arg(500);
+            let page = tokio::time::timeout(PURGE_TIMEOUT, scan.query_async::<(u64, Vec<String>)>(&mut conn)).await;
+            let (next, keys) = match page {
+                Ok(Ok(page)) => page,
+                Ok(Err(e)) => {
+                    tracing::warn!(error = %e, "redis SCAN failed; stale entries will expire by TTL");
+                    return removed;
+                }
+                Err(_) => {
+                    tracing::warn!("redis SCAN timed out; stale entries will expire by TTL");
+                    return removed;
+                }
+            };
+            let stale: Vec<&String> = keys.iter().filter(|k| !k.starts_with(&keep)).collect();
+            if !stale.is_empty() {
+                let mut unlink = redis::cmd("UNLINK");
+                unlink.arg(&stale);
+                match tokio::time::timeout(PURGE_TIMEOUT, unlink.query_async::<u64>(&mut conn)).await {
+                    Ok(Ok(n)) => removed += n,
+                    Ok(Err(e)) => tracing::warn!(error = %e, "redis UNLINK failed"),
+                    Err(_) => tracing::warn!("redis UNLINK timed out"),
+                }
+            }
+            if next == 0 {
+                return removed;
+            }
+            cursor = next;
         }
     }
 

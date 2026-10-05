@@ -49,6 +49,7 @@ async fn setup() -> Result<Option<Router>> {
         concurrency: 1,
         schedule: String::new(),
         timezone: "UTC".into(),
+        run_on_start: false,
         config_dir: PathBuf::from("config"),
     };
     let db = mf::db::Db::connect(&settings).await?;
@@ -234,5 +235,24 @@ async fn api_serves_correct_metrics() -> Result<()> {
     assert_eq!(doc["components"]["schemas"]["ScreenRow"]["required"], serde_json::json!(["scheme_code"]));
     let sip_req = doc["components"]["schemas"]["CalculateSipRow"]["required"].as_array().unwrap();
     assert!(!sip_req.iter().any(|r| r == "schedule"));
+    Ok(())
+}
+
+/// A new data version deletes the stored responses of every other version.
+#[tokio::test]
+async fn purging_removes_only_other_versions() -> anyhow::Result<()> {
+    use mf_api::store::{CacheStatus, CachedResponse, ResponseStore};
+    // Its own Redis database: a purge must not delete entries the other cache tests rely on.
+    let url = std::env::var("MF_REDIS_URL")?;
+    let url = format!("{}/14", url.rsplit_once('/').map_or(url.as_str(), |(base, _)| base));
+    let store = ResponseStore::new(&url, 60)?;
+    let body = || async { Ok(CachedResponse { content_type: "application/json".into(), body: bytes::Bytes::from_static(b"{}") }) };
+    let (old, new) = (ResponseStore::key("purge-test-old", "/x"), ResponseStore::key("purge-test-new", "/x"));
+    store.get_or_load(&old, body()).await;
+    store.get_or_load(&new, body()).await;
+    assert!(store.purge_other_versions("purge-test-new").await >= 1);
+    assert_eq!(store.get_or_load(&new, body()).await.1, CacheStatus::Hit, "current version kept");
+    assert_eq!(store.get_or_load(&old, body()).await.1, CacheStatus::Miss, "other version deleted");
+    store.purge_other_versions("purge-test-unused").await; // leave database 14 empty
     Ok(())
 }

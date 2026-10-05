@@ -26,6 +26,10 @@ pub struct Settings {
     pub schedule: String,
     #[arg(long, env = "MF_TIMEZONE", default_value = "Asia/Kolkata")]
     pub timezone: String,
+    /// `run`: do a full sync (config, ingest, refresh) as soon as the scheduler starts, before
+    /// waiting for the first MF_SCHEDULE slot. Incremental, so a restart costs a few minutes.
+    #[arg(long, env = "MF_RUN_ON_START", default_value_t = true, action = clap::ArgAction::Set)]
+    pub run_on_start: bool,
     #[arg(long, env = "MF_CONFIG_DIR", default_value = "config")]
     pub config_dir: PathBuf,
 }
