@@ -143,9 +143,10 @@ robots; also a build arg), `MF_WEB_PORT` (13000).
 | `mf refresh [--from STEP] [--only S1,S2]` | Rebuild the derived tables and views (`sql/derived/`, in file order). |
 | `mf migrate`, `mf sync-config`, `mf status` | Stored-table schema, config tables, recent runs + refresh step timings. |
 
-Environment: `MF_SCHEDULE` (default `0 30 23 * * *;0 0 7 * * *`, i.e. 23:30 and 07:00 in
-`MF_TIMEZONE`=Asia/Kolkata; AMFI publishes NAVs in the late evening, the morning run catches late
-publishers), `MF_RUN_ON_START` (default `true`: sync when the scheduler starts; `false` waits for
+Environment: `MF_SCHEDULE` (default `0 0 */4 * * *`, i.e. every 4 hours from midnight in
+`MF_TIMEZONE`=Asia/Kolkata; AMFI publishes NAVs in the late evening and some AMCs publish late, so
+the 00:00 run usually has the day's NAVs and later runs pick up stragglers; `;` separates several
+expressions), `MF_RUN_ON_START` (default `true`: sync when the scheduler starts; `false` waits for
 the first scheduled slot, except on a fresh database), `MF_CONCURRENCY` (8 parallel history
 requests), `MF_CLICKHOUSE_*`, `RUST_LOG`.
 

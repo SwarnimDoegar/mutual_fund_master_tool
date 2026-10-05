@@ -175,3 +175,18 @@ pub async fn print_status(db: &Db) -> Result<()> {
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::TimeZone;
+
+    #[test]
+    fn default_schedule_runs_every_four_hours_from_midnight() {
+        let tz: Tz = "Asia/Kolkata".parse().unwrap();
+        let s = Schedule::from_str("0 0 */4 * * *").unwrap();
+        let from = tz.with_ymd_and_hms(2026, 10, 5, 13, 10, 0).unwrap();
+        let next: Vec<String> = s.after(&from).take(4).map(|t| t.format("%d %H:%M").to_string()).collect();
+        assert_eq!(next, ["05 16:00", "05 20:00", "06 00:00", "06 04:00"]);
+    }
+}

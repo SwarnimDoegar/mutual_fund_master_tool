@@ -46,7 +46,7 @@ services:
       MF_CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-mf_local_password}
       MF_CLICKHOUSE_DATABASE: mf
       MF_CONCURRENCY: ${MF_CONCURRENCY:-8}
-      MF_SCHEDULE: ${MF_SCHEDULE:-0 30 23 * * *;0 0 7 * * *}
+      MF_SCHEDULE: ${MF_SCHEDULE:-0 0 */4 * * *}
       MF_TIMEZONE: ${MF_TIMEZONE:-Asia/Kolkata}
       MF_RUN_ON_START: ${MF_RUN_ON_START:-true}
       RUST_LOG: ${RUST_LOG:-info}

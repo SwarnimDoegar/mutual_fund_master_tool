@@ -22,7 +22,7 @@ pub struct Settings {
     #[arg(long, env = "MF_CONCURRENCY", default_value_t = 8)]
     pub concurrency: usize,
     /// `;`-separated cron expressions (sec min hour day month weekday), evaluated in MF_TIMEZONE.
-    #[arg(long, env = "MF_SCHEDULE", default_value = "0 30 23 * * *;0 0 7 * * *")]
+    #[arg(long, env = "MF_SCHEDULE", default_value = "0 0 */4 * * *")]
     pub schedule: String,
     #[arg(long, env = "MF_TIMEZONE", default_value = "Asia/Kolkata")]
     pub timezone: String,
