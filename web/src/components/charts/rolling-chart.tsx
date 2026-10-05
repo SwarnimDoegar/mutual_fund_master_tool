@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { fetchApi } from "@/lib/api/browser";
 import type { RollingPoint } from "@/lib/api/types";
 import { TimeChart, type ChartSeries } from "./time-chart";
@@ -13,29 +13,39 @@ function toSeries(points: RollingPoint[]): ChartSeries[] {
   return out;
 }
 
-/** Rolling-return series for 1Y/3Y/5Y/10Y windows; other windows load on demand. */
+/**
+ * Rolling-return series for 1Y/3Y/5Y/10Y windows; other windows load on demand. The chart keeps
+ * showing the current window until the requested one has loaded, so it never unmounts mid-switch.
+ */
 export function RollingChart({ code, periods, initial }: { code: number; periods: string[]; initial: { period: string; points: RollingPoint[] } }) {
-  const [period, setPeriod] = useState(initial.period);
+  const [requested, setRequested] = useState(initial.period);
+  const [shown, setShown] = useState(initial.period);
   const [cache, setCache] = useState<Record<string, RollingPoint[]>>({ [initial.period]: initial.points });
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const latest = useRef(initial.period);
 
   async function select(p: string) {
-    setPeriod(p);
+    latest.current = p;
+    setRequested(p);
     setError(null);
-    if (cache[p]) return;
-    setLoading(true);
+    if (cache[p]) {
+      setShown(p);
+      return;
+    }
     try {
       const res = await fetchApi<RollingPoint[]>(`/v1/schemes/${code}/rolling/${p}`, { interval: "week" });
       setCache((c) => ({ ...c, [p]: res.data }));
+      if (latest.current === p) setShown(p);
     } catch (e) {
+      if (latest.current !== p) return;
       setError(e instanceof Error ? e.message : "Could not load");
-    } finally {
-      setLoading(false);
+      setRequested(shown);
     }
   }
 
-  const points = cache[period];
+  const loading = requested !== shown && !error;
+  const period = shown;
+  const points = cache[shown];
   const series = useMemo(() => (points ? toSeries(points) : []), [points]);
 
   return (
@@ -43,7 +53,7 @@ export function RollingChart({ code, periods, initial }: { code: number; periods
       <div className="mb-3 flex items-center gap-3">
         <div className="seg" role="group" aria-label="Rolling window">
           {periods.map((p) => (
-            <button key={p} type="button" aria-pressed={period === p} onClick={() => select(p)}>
+            <button key={p} type="button" aria-pressed={requested === p} onClick={() => select(p)}>
               {p}
             </button>
           ))}

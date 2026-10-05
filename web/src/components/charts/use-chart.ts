@@ -51,6 +51,13 @@ function themeOptions(t: ChartTheme): DeepPartial<ChartOptions> {
  * Creates a chart in `ref`, keeps it themed with the page (light/dark) and disposes it on
  * unmount. Returns the chart and the current theme once mounted.
  */
+/**
+ * Charts that have been disposed. On unmount React runs this hook's cleanup (chart.remove())
+ * before the series cleanups of the component using it, and calling removeSeries on a disposed
+ * chart throws, so series cleanups check this first.
+ */
+export const disposedCharts = new WeakSet<IChartApi>();
+
 export function useChart(options: DeepPartial<ChartOptions> = {}) {
   const ref = useRef<HTMLDivElement>(null);
   const [state, setState] = useState<{ chart: IChartApi; theme: ChartTheme } | null>(null);
@@ -78,6 +85,7 @@ export function useChart(options: DeepPartial<ChartOptions> = {}) {
     return () => {
       mq.removeEventListener("change", onScheme);
       setState(null);
+      disposedCharts.add(chart);
       chart.remove();
     };
     // Options are applied once at creation; callers update series, not chart options.

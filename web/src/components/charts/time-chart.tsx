@@ -3,7 +3,7 @@
 import { BaselineSeries, LineSeries, LineStyle, type ISeriesApi, type MouseEventParams, type Time } from "lightweight-charts";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { date } from "@/lib/format";
-import { inrFormatter, numFormatter, pctFormatter, useChart } from "./use-chart";
+import { disposedCharts, inrFormatter, numFormatter, pctFormatter, useChart } from "./use-chart";
 
 export type Point = { t: string; v: number };
 export type ChartSeries = {
@@ -77,7 +77,8 @@ export function TimeChart({
     chart.timeScale().fitContent();
     const current = apis.current;
     return () => {
-      for (const a of current) chart.removeSeries(a);
+      // the whole chart may already be gone (component unmounting): nothing to remove then
+      if (!disposedCharts.has(chart)) for (const a of current) chart.removeSeries(a);
       apis.current = [];
     };
   }, [chart, theme, series, formatter]);
