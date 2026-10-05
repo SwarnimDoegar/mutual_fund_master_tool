@@ -169,6 +169,18 @@ async fn api_serves_correct_metrics() -> Result<()> {
     let cagrs: Vec<f64> = rows.iter().filter_map(|r| r["cagr_3y"].as_f64()).collect();
     assert!(cagrs.windows(2).all(|w| w[0] >= w[1]), "sorted descending: {cagrs:?}");
     assert_eq!(rows[0].as_object().unwrap().len(), 3, "scheme_code + requested fields");
+    // Text sorts ignore case (AMCs publish some names in capitals), both directions.
+    for (sort, rev) in [("scheme_name", false), ("-scheme_name", true)] {
+        let r = get(&app, &format!("/v1/screener?active=false&sort={sort}&fields=scheme_name&limit=500")).await;
+        let names: Vec<String> = r.json["data"].as_array().unwrap().iter().map(|r| r["scheme_name"].as_str().unwrap().to_lowercase()).collect();
+        let mut want = names.clone();
+        want.sort();
+        if rev {
+            want.reverse();
+        }
+        assert!(names.len() > 1);
+        assert_eq!(names, want, "case-insensitive {sort}");
+    }
     let band = get(&app, "/v1/screener?min_cagr_3y=0.119&max_cagr_3y=0.121&active=false").await;
     let codes: Vec<u64> = band.json["data"].as_array().unwrap().iter().map(|r| r["scheme_code"].as_u64().unwrap()).collect();
     assert!(codes.contains(&9004) && !codes.contains(&9005), "{codes:?}");

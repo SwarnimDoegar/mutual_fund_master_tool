@@ -151,12 +151,18 @@ pub async fn screen(
     if !columns.contains_key(sort_col) {
         return Err(ApiError::bad(format!("unknown sort column {sort_col:?}")));
     }
+    // Text columns (fund name, AMC, category) sort case-insensitively: some AMCs publish names in
+    // capitals, which would otherwise sort before every mixed-case name.
+    let order_expr = match columns.get(sort_col) {
+        Some(t) if t.contains("String") => format!("lowerUTF8({sort_col})"),
+        _ => sort_col.to_string(),
+    };
     let (limit, offset) = paging.resolve(50)?;
 
     let where_sql = if conds.is_empty() { "1".to_string() } else { conds.join(" AND ") };
     let sql = format!(
         "SELECT {}, count() OVER () AS total FROM fund_metrics WHERE {where_sql}
-         ORDER BY {sort_col} {} NULLS LAST, scheme_code
+         ORDER BY {order_expr} {} NULLS LAST, scheme_code
          LIMIT {{limit:UInt32}} OFFSET {{offset:UInt32}}",
         fields.join(", "),
         if desc { "DESC" } else { "ASC" },
