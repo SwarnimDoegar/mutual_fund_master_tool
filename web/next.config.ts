@@ -12,6 +12,10 @@ const nextConfig: NextConfig = {
   // refresh simply stops reading old entries and the LRU evicts them.
   cacheMaxMemorySize: 256 * 1024 * 1024,
   poweredByHeader: false,
+  // The methodology page became the Learn section.
+  async redirects() {
+    return [{ source: "/methodology", destination: "/learn", permanent: true }];
+  },
 };
 
 export default nextConfig;

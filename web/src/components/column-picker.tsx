@@ -80,6 +80,9 @@ export function ColumnPicker({ columns }: { columns: string[] }) {
             <h2 id="column-picker-title" className="h-section">
               Choose columns <span className="ml-1 text-sm font-normal text-muted">{draft.length} of up to {MAX_COLUMNS}</span>
             </h2>
+            <a href="/learn" target="_blank" rel="noopener" className="link ml-auto mr-3 text-xs">
+              What do these mean?
+            </a>
             <button type="button" className="btn px-2" aria-label="Close" onClick={() => dialog.current?.close()}>
               <X className="size-4" />
             </button>

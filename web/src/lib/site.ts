@@ -7,7 +7,7 @@ export const NAV_LINKS = [
   { href: "/categories", label: "Categories" },
   { href: "/fund-houses", label: "Fund houses" },
   { href: "/compare", label: "Compare" },
-  { href: "/methodology", label: "Methodology" },
+  { href: "/learn", label: "Learn" },
 ] as const;
 
 /** Funds the comparison page accepts (mf-api allows up to 10). */

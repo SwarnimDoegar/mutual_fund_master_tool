@@ -21,7 +21,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const url = (path: string) => `${SITE_URL}${path}`;
 
   return [
-    ...["/", "/screener", "/categories", "/fund-houses", "/compare", "/methodology"].map((p) => ({ url: url(p), changeFrequency: "daily" as const })),
+    ...["/", "/screener", "/categories", "/fund-houses", "/compare", "/learn"].map((p) => ({ url: url(p), changeFrequency: "daily" as const })),
     ...cats.map((c) => ({ url: url(categoryHref(c.category)), changeFrequency: "daily" as const })),
     ...houses.map((h) => ({ url: url(fundHouseHref(h.fund_house)), changeFrequency: "weekly" as const })),
     ...schemes.map((s) => ({

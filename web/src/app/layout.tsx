@@ -70,8 +70,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
                   mfapi.in
                 </a>
                 . Metrics are computed from published NAVs only; see{" "}
-                <Link className="link" href="/methodology">
-                  methodology
+                <Link className="link" href="/learn">
+                  how every metric is computed
                 </Link>
                 .
               </p>

@@ -36,9 +36,9 @@ export async function RanksCard({ s }: { s: Scheme }) {
             const d = metric(r.metric);
             return (
               <li key={r.metric} className="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-0.5">
-                <span className="truncate" title={d.description}>
+                <Link href={`/learn#${r.metric}`} className="truncate hover:text-brand" title={d.description}>
                   {d.label}
-                </span>
+                </Link>
                 <span className="num text-right text-xs text-muted">
                   {r.rank}/{r.peers}
                 </span>

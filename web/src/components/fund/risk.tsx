@@ -1,29 +1,30 @@
+import Link from "next/link";
 import { Card, Empty, Value } from "@/components/ui";
 import { api } from "@/lib/api/server";
 import type { RiskRow } from "@/lib/api/types";
 import type { ValueKind } from "@/lib/format";
 
-type Field = { key: keyof RiskRow; label: string; kind: ValueKind; hint: string };
+type Field = { key: keyof RiskRow; label: string; kind: ValueKind; hint: string; learn: string };
 
 const FIELDS: Field[] = [
-  { key: "cagr", label: "CAGR", kind: "ret", hint: "Annualised return over the window" },
-  { key: "volatility", label: "Volatility", kind: "pct", hint: "Annualised standard deviation of returns" },
-  { key: "downside_deviation", label: "Downside deviation", kind: "pct", hint: "Volatility of returns below the risk-free rate" },
-  { key: "sharpe", label: "Sharpe", kind: "ratio", hint: "Mean excess return ÷ volatility of excess returns" },
-  { key: "sortino", label: "Sortino", kind: "ratio", hint: "Mean excess return ÷ downside deviation" },
-  { key: "calmar", label: "Calmar", kind: "ratio", hint: "CAGR ÷ |max drawdown|" },
-  { key: "omega", label: "Omega", kind: "ratio", hint: "Gains above the risk-free rate ÷ losses below it" },
-  { key: "max_drawdown", label: "Max drawdown", kind: "pct", hint: "Deepest fall from a running high" },
-  { key: "ulcer_index", label: "Ulcer index", kind: "pct", hint: "Root-mean-square drawdown" },
-  { key: "pct_time_underwater", label: "Time under water", kind: "pct", hint: "Share of days below a previous high" },
-  { key: "var_95", label: "VaR 95%", kind: "pct", hint: "Loss exceeded in 5% of periods" },
-  { key: "cvar_95", label: "CVaR 95%", kind: "pct", hint: "Average loss in the worst 5% of periods" },
-  { key: "best_period", label: "Best period", kind: "ret", hint: "Best single day (daily) or month (monthly)" },
-  { key: "worst_period", label: "Worst period", kind: "ret", hint: "Worst single day (daily) or month (monthly)" },
-  { key: "pct_positive", label: "Positive periods", kind: "pct", hint: "Share of periods with a gain" },
-  { key: "gain_loss_ratio", label: "Gain/loss ratio", kind: "ratio", hint: "Average gain ÷ average loss" },
-  { key: "skewness", label: "Skewness", kind: "ratio", hint: "Negative: fatter left tail" },
-  { key: "excess_kurtosis", label: "Excess kurtosis", kind: "ratio", hint: "Tail heaviness vs a normal distribution" },
+  { key: "cagr", label: "CAGR", kind: "ret", hint: "Annualised return over the window", learn: "cagr" },
+  { key: "volatility", label: "Volatility", kind: "pct", hint: "Annualised standard deviation of returns", learn: "volatility" },
+  { key: "downside_deviation", label: "Downside deviation", kind: "pct", hint: "Volatility of returns below the risk-free rate", learn: "downside-deviation" },
+  { key: "sharpe", label: "Sharpe", kind: "ratio", hint: "Mean excess return ÷ volatility of excess returns", learn: "sharpe" },
+  { key: "sortino", label: "Sortino", kind: "ratio", hint: "Mean excess return ÷ downside deviation", learn: "sortino" },
+  { key: "calmar", label: "Calmar", kind: "ratio", hint: "CAGR ÷ |max drawdown|", learn: "calmar" },
+  { key: "omega", label: "Omega", kind: "ratio", hint: "Gains above the risk-free rate ÷ losses below it", learn: "omega" },
+  { key: "max_drawdown", label: "Max drawdown", kind: "pct", hint: "Deepest fall from a running high", learn: "max-drawdown" },
+  { key: "ulcer_index", label: "Ulcer index", kind: "pct", hint: "Root-mean-square drawdown", learn: "ulcer" },
+  { key: "pct_time_underwater", label: "Time under water", kind: "pct", hint: "Share of days below a previous high", learn: "ulcer" },
+  { key: "var_95", label: "VaR 95%", kind: "pct", hint: "Loss exceeded in 5% of periods", learn: "var" },
+  { key: "cvar_95", label: "CVaR 95%", kind: "pct", hint: "Average loss in the worst 5% of periods", learn: "var" },
+  { key: "best_period", label: "Best period", kind: "ret", hint: "Best single day (daily) or month (monthly)", learn: "periods" },
+  { key: "worst_period", label: "Worst period", kind: "ret", hint: "Worst single day (daily) or month (monthly)", learn: "periods" },
+  { key: "pct_positive", label: "Positive periods", kind: "pct", hint: "Share of periods with a gain", learn: "periods" },
+  { key: "gain_loss_ratio", label: "Gain/loss ratio", kind: "ratio", hint: "Average gain ÷ average loss", learn: "omega" },
+  { key: "skewness", label: "Skewness", kind: "ratio", hint: "Negative: fatter left tail", learn: "shape" },
+  { key: "excess_kurtosis", label: "Excess kurtosis", kind: "ratio", hint: "Tail heaviness vs a normal distribution", learn: "shape" },
 ];
 
 function RiskTable({ rows }: { rows: RiskRow[] }) {
@@ -43,8 +44,10 @@ function RiskTable({ rows }: { rows: RiskRow[] }) {
         <tbody>
           {FIELDS.map((f) => (
             <tr key={f.key}>
-              <td title={f.hint} className="cursor-help">
-                {f.label}
+              <td>
+                <Link href={`/learn#${f.learn}`} title={f.hint} className="underline decoration-border decoration-dotted underline-offset-4 hover:text-brand">
+                  {f.label}
+                </Link>
               </td>
               {rows.map((r) => (
                 <td key={r.period} className="r">

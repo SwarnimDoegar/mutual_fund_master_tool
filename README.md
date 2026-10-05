@@ -103,7 +103,8 @@ mf-api. Pages: home with category leaders, fund detail (growth vs category avera
 index, trailing/calendar/monthly returns, risk on daily and monthly bases, benchmark statistics,
 rolling returns, drawdowns, SIP table and calculator, lumpsum calculator, peer ranks, data quality),
 screener (filters, metric ranges, column sets, sorting), categories, fund houses, compare (up to
-six funds) and methodology. Charts use TradingView Lightweight Charts; light and dark follow the OS.
+six funds) and Learn (what every metric means and how it is computed; `/learn#<column>` links to
+one). Charts use TradingView Lightweight Charts; light and dark follow the OS.
 
 * **Rendering.** [Cache Components](https://nextjs.org/docs/app/getting-started/caching) are on:
   every page's chrome is prerendered and its data streams in at request time inside `<Suspense>`.

@@ -1,5 +1,5 @@
 // Labels and meaning of the `fund_metrics` columns the UI shows (screener, ranks, category
-// statistics, methodology). Definitions mirror the README's "Conventions".
+// statistics, the column picker). Longer explanations live in learn.ts.
 import type { ValueKind } from "./format";
 
 export type MetricGroup = "Returns" | "Risk" | "Risk-adjusted" | "Benchmark" | "Rolling" | "SIP" | "Price" | "Data";

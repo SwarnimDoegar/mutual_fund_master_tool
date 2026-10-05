@@ -35,8 +35,8 @@ export default function Home() {
           <Link className="btn" href="/compare">
             Compare funds
           </Link>
-          <Link className="btn" href="/methodology">
-            How we compute
+          <Link className="btn" href="/learn">
+            Learn the metrics
           </Link>
         </div>
       </section>
@@ -69,7 +69,7 @@ export default function Home() {
           ["Risk", "Volatility, downside deviation, drawdowns with recovery times, VaR/CVaR, Ulcer index, skew and kurtosis — daily and Morningstar-comparable monthly bases."],
           ["Benchmarks", "Alpha, beta, R², tracking error, information ratio and up/down capture against both the category average and an index fund tracking the AMFI benchmark."],
         ].map(([t, d]) => (
-          <Card key={t} title={t}>
+          <Card key={t} title={t} action={<Link className="link text-xs" href={`/learn#${t === "Benchmarks" ? "benchmarks" : t.toLowerCase()}`}>Learn →</Link>}>
             <p className="text-sm text-muted">{d}</p>
           </Card>
         ))}
