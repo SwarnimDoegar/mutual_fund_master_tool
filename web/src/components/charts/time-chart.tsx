@@ -137,8 +137,8 @@ function changeText(s: ChartSeries): string | null {
   const total = b.v / a.v - 1;
   const years = (Date.parse(b.t) - Date.parse(a.t)) / (365.25 * 86_400_000);
   const sign = (v: number) => (v > 0 ? "+" : "");
-  const t = `${sign(total)}${(total * 100).toFixed(1)}% total`;
+  const t = `${sign(total)}${(total * 100).toFixed(2)}% total`;
   if (years < 1) return t;
   const cagr = Math.pow(1 + total, 1 / years) - 1;
-  return `${t} · ${sign(cagr)}${(cagr * 100).toFixed(1)}% a year`;
+  return `${t} · ${sign(cagr)}${(cagr * 100).toFixed(2)}% a year`;
 }

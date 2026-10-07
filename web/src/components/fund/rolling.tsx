@@ -50,10 +50,10 @@ export async function RollingSection({ code }: { code: number }) {
                 <td className="r"><Pct v={r.median} className="font-semibold" /></td>
                 <td className="r"><Pct v={r.p75} /></td>
                 <td className="r"><Pct v={r.max_return} /></td>
-                <td className="r num">{pct(r.pct_negative, { digits: 1 })}</td>
-                <td className="r num">{pct(r.pct_above_10, { digits: 1 })}</td>
+                <td className="r num">{pct(r.pct_negative)}</td>
+                <td className="r num">{pct(r.pct_above_10)}</td>
                 <td className="r"><Pct v={r.category_median} /></td>
-                <td className="r num">{pct(r.pct_beat_category, { digits: 1 })}</td>
+                <td className="r num">{pct(r.pct_beat_category)}</td>
               </tr>
             ))}
           </tbody>

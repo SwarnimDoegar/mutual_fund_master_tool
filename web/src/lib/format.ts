@@ -40,7 +40,7 @@ export function int(v: Num): string {
 }
 
 export function nav(v: Num): string {
-  return ok(v) ? `₹${num(v, 4)}` : DASH;
+  return ok(v) ? `₹${num(v, 2)}` : DASH;
 }
 
 /** Rupees with Indian digit grouping: ₹12,34,567. */
@@ -80,7 +80,7 @@ export function month(iso: string | null | undefined): string {
 
 export function years(v: Num): string {
   if (!ok(v)) return DASH;
-  return v < 1 ? `${Math.round(v * 12)} mo` : `${num(v, 1)} yrs`;
+  return v < 1 ? `${Math.round(v * 12)} mo` : `${num(v, 2)} yrs`;
 }
 
 export function days(v: Num): string {

@@ -139,8 +139,8 @@ export function LumpsumCalculator({ code, inception, asOf }: { code: number; inc
             ["Gain", <span key="g" className={tone(result.gain)}>{inr(result.gain)}</span>],
             ["Absolute", pct(result.abs_return)],
             ["CAGR", result.cagr != null ? pct(result.cagr) : "—"],
-            ["Bought", `${date(result.buy_date)} @ ₹${result.buy_nav.toFixed(4)}`],
-            ["Valued", `${date(result.value_date)} @ ₹${result.value_nav.toFixed(4)}`],
+            ["Bought", `${date(result.buy_date)} @ ₹${result.buy_nav.toFixed(2)}`],
+            ["Valued", `${date(result.value_date)} @ ₹${result.value_nav.toFixed(2)}`],
           ]}
         />
       )}

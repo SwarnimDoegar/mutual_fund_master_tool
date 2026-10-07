@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: PageProps<"/funds/[id]">): Pr
   ].filter(Boolean);
   return {
     title: s.scheme_name,
-    description: `${s.scheme_name} (${s.category || s.fund_house}): NAV ₹${s.last_nav?.toFixed(4) ?? "—"} on ${date(s.last_nav_date)}. ${bits.join(", ")}. Returns, risk, rolling returns, SIP XIRR and peer ranks.`,
+    description: `${s.scheme_name} (${s.category || s.fund_house}): NAV ₹${s.last_nav?.toFixed(2) ?? "—"} on ${date(s.last_nav_date)}. ${bits.join(", ")}. Returns, risk, rolling returns, SIP XIRR and peer ranks.`,
     alternates: { canonical: fundHref(s.scheme_code, s.scheme_name) },
   };
 }

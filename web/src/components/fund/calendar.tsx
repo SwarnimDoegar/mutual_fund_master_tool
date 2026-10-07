@@ -72,11 +72,11 @@ export async function CalendarSection({ code }: { code: number }) {
         <div className="mt-6">
           <h3 className="text-sm font-medium">Monthly returns, %</h3>
           <p className="mb-2 text-xs text-muted">
-            Each cell is that month&apos;s return in percent (2.5 = +2.5%). Greener is better, redder is worse; blank means no data. * marks a
+            Each cell is that month&apos;s return in percent (2.50 = +2.50%). Greener is better, redder is worse; blank means no data. * marks a
             partial month or year (the fund&apos;s first, or the current one so far). The last column is the calendar-year return.
           </p>
           <div className="-mx-4 overflow-x-auto sm:-mx-5">
-            <table className="w-full min-w-[640px] border-separate border-spacing-0.5 px-4 text-xs sm:px-5">
+            <table className="w-full min-w-[760px] border-separate border-spacing-0.5 px-4 text-xs sm:px-5">
               <thead>
                 <tr>
                   <th className="text-left font-medium text-muted">Year</th>
@@ -99,7 +99,7 @@ export async function CalendarSection({ code }: { code: number }) {
                         style={heat(c?.ret)}
                         title={c?.partial ? "Partial month" : undefined}
                       >
-                        {c?.ret == null ? "" : `${(c.ret * 100).toFixed(1)}${c.partial ? "*" : ""}`}
+                        {c?.ret == null ? "" : `${(c.ret * 100).toFixed(2)}${c.partial ? "*" : ""}`}
                       </td>
                     ))}
                     <td
@@ -107,7 +107,7 @@ export async function CalendarSection({ code }: { code: number }) {
                       style={heat((yearRet.get(y)?.ret ?? 0) / 4)}
                       title={yearRet.get(y)?.is_partial ? "Partial year" : undefined}
                     >
-                      {yearRet.get(y)?.ret != null ? `${(yearRet.get(y)!.ret! * 100).toFixed(1)}${yearRet.get(y)!.is_partial ? "*" : ""}` : ""}
+                      {yearRet.get(y)?.ret != null ? `${(yearRet.get(y)!.ret! * 100).toFixed(2)}${yearRet.get(y)!.is_partial ? "*" : ""}` : ""}
                     </td>
                   </tr>
                 ))}

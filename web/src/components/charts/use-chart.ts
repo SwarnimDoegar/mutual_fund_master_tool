@@ -95,6 +95,6 @@ export function useChart(options: DeepPartial<ChartOptions> = {}) {
   return { ref, chart: state?.chart ?? null, theme: state?.theme ?? null };
 }
 
-export const pctFormatter = (v: number) => `${(v * 100).toFixed(Math.abs(v) < 0.1 ? 2 : 1)}%`;
+export const pctFormatter = (v: number) => `${(v * 100).toFixed(2)}%`;
 export const inrFormatter = (v: number) => `₹${Math.round(v).toLocaleString("en-IN")}`;
-export const numFormatter = (v: number) => v.toLocaleString("en-IN", { maximumFractionDigits: 2 });
+export const numFormatter = (v: number) => v.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });

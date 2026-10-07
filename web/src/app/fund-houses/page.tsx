@@ -56,7 +56,7 @@ async function HouseTable() {
                 <td>
                   <PercentileBar value={h.avg_percentile_sharpe_3y} />
                 </td>
-                <td className="r num">{pct(h.pct_top_quartile_cagr_3y, { digits: 0 })}</td>
+                <td className="r num">{pct(h.pct_top_quartile_cagr_3y)}</td>
               </tr>
             ))}
           </tbody>

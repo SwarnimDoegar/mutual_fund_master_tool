@@ -89,7 +89,7 @@ async function House({ params, searchParams }: { params: Promise<{ slug: string 
         <Stat label="Avg percentile, 3Y return (100 = best)">
           <PercentileBar value={h.avg_percentile_cagr_3y} />
         </Stat>
-        <Stat label="Funds in top quarter">{pct(h.pct_top_quartile_cagr_3y, { digits: 0 })}</Stat>
+        <Stat label="Funds in top quarter">{pct(h.pct_top_quartile_cagr_3y)}</Stat>
         <Stat label="NAV history since">{date(h.first_nav_date)}</Stat>
       </div>
       <Card
