@@ -48,9 +48,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               <SearchBox />
             </div>
           </div>
-          <nav aria-label="Main" className="page-x flex gap-1 overflow-x-auto pb-2 text-sm lg:hidden">
+          <nav aria-label="Main" className="page-x flex overflow-x-auto pb-2 text-[13px] sm:gap-0.5 sm:text-sm lg:hidden">
             {NAV_LINKS.map((l) => (
-              <Link key={l.href} href={l.href} className="shrink-0 rounded-md px-2.5 py-1 text-muted hover:bg-surface-2 hover:text-text">
+              <Link key={l.href} href={l.href} className="shrink-0 rounded-md px-1.5 py-1 text-muted first:-ml-1.5 hover:bg-surface-2 hover:text-text sm:px-2">
                 {l.label}
               </Link>
             ))}

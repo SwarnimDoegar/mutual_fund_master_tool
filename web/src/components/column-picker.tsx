@@ -56,8 +56,8 @@ export function ColumnPicker({ columns }: { columns: string[] }) {
     !term || m.label.toLowerCase().includes(term) || m.key.includes(term) || m.short.toLowerCase().includes(term);
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <nav aria-label="Column presets" className="seg max-w-full overflow-x-auto">
+    <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2">
+      <nav aria-label="Column presets" className="seg">
         {(Object.keys(PRESETS) as PresetKey[]).map((k) => (
           <button key={k} type="button" aria-pressed={active === k} onClick={() => navigate([...PRESETS[k].columns])} disabled={pending}>
             {PRESETS[k].label}
