@@ -116,9 +116,31 @@ services:
     environment:
       MF_API_URL: http://api:8080
       SITE_URL: ${SITE_URL:-http://localhost:13000}
+    # not published: browsers reach it through `edge`
+
+  # Public entry point: nginx in front of the UI with per-client rate limits
+  # (docker/edge/default.conf.template). Over the limits a client gets 429 with Retry-After.
+  edge:
+    image: nginx:1.30.6-alpine
+    restart: unless-stopped
+    depends_on:
+      - web
+    environment:
+      # Behind a tunnel or proxy, take the client address from this header, but only on requests
+      # from MF_TRUSTED_PROXY (an address or CIDR). The default trusts nobody.
+      MF_TRUSTED_PROXY: ${MF_TRUSTED_PROXY:-127.0.0.1}
+      MF_REAL_IP_HEADER: ${MF_REAL_IP_HEADER:-X-Forwarded-For}
+      NGINX_ENVSUBST_FILTER: "^MF_"
+    volumes:
+      - ./docker/edge/default.conf.template:/etc/nginx/templates/default.conf.template:ro
     ports:
       # MF_WEB_BIND=0.0.0.0 when a reverse proxy or tunnel on another host fronts the UI
-      - "${MF_WEB_BIND:-127.0.0.1}:${MF_WEB_PORT:-13000}:3000"
+      - "${MF_WEB_BIND:-127.0.0.1}:${MF_WEB_PORT:-13000}:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/edge-health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
 
 volumes:
   clickhouse-data:

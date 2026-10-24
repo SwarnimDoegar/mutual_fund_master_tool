@@ -10,7 +10,7 @@ A read-only REST API (`api/`, crate `mf-api`) serves the tables, and a Next.js w
 them for people.
 
 ```
-mfapi.in ──► mf (Rust) ──► ClickHouse ──► mf-api (Rust, axum) ──► web (Next.js) ──► browsers
+mfapi.in ──► mf (Rust) ──► ClickHouse ──► mf-api (Rust, axum) ──► web (Next.js) ──► edge (nginx, rate limits) ──► browsers
                                               ├──► Redis (shared response cache)
                                               └──► other API clients
              ingest          stored:   schemes, nav (ReplacingMergeTree, idempotent), config, rank history
@@ -133,6 +133,14 @@ pnpm typecheck && pnpm lint && pnpm build
 Web settings: `MF_API_URL` (runtime), `SITE_URL` (public origin for canonical links, sitemap and
 robots; also a build arg), `MF_WEB_PORT` (13000), `MF_WEB_BIND` (127.0.0.1; `0.0.0.0` when a proxy on
 another host fronts the UI).
+
+**Rate limiting.** Browsers reach the UI through `edge`, an nginx proxy
+(`docker/edge/default.conf.template`) that limits each client address: pages 10 requests/s with
+bursts of 120 (a page view prefetches the pages it links to), the `/api/v1` pass-through 5/s with
+bursts of 30, 30 open connections; `/_next/static` is never limited. Over a limit the client gets
+`429` with `Retry-After`. Behind a tunnel or reverse proxy, set `MF_TRUSTED_PROXY` to its address
+and `MF_REAL_IP_HEADER` to the header carrying the client address (`CF-Connecting-IP` for
+Cloudflare); otherwise every visitor shares the proxy's limit.
 
 ## Commands
 

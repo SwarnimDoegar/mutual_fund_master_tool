@@ -1,0 +1,72 @@
+# Edge proxy in front of the web UI: per-client rate limits, then everything goes to Next.js.
+# Rendered by the nginx image's envsubst step (only ${MF_*} variables are substituted).
+
+# Client address. Behind a tunnel or proxy every request arrives from that proxy, so the real
+# client comes from ${MF_REAL_IP_HEADER}, trusted only on requests from ${MF_TRUSTED_PROXY}
+# (e.g. CF-Connecting-IP from cloudflared's host). Anything else is limited by its own address.
+set_real_ip_from ${MF_TRUSTED_PROXY};
+real_ip_header ${MF_REAL_IP_HEADER};
+real_ip_recursive on;
+
+# Pages are generous: one page view also prefetches the funds and pages it links to. The JSON
+# pass-through (search-as-you-type, calculators, chart windows) is tighter. Bursts are served
+# at once; beyond them requests get 429 until the client slows down.
+limit_req_zone $binary_remote_addr zone=pages:10m rate=10r/s;
+limit_req_zone $binary_remote_addr zone=api:10m rate=5r/s;
+limit_conn_zone $binary_remote_addr zone=conns:10m;
+limit_req_status 429;
+limit_conn_status 429;
+limit_req_log_level warn;
+limit_conn_log_level warn;
+
+# Re-resolve the service name, so a recreated web container (new IP) is picked up.
+resolver 127.0.0.11 valid=10s ipv6=off;
+upstream web {
+    zone web 64k;
+    server web:3000 resolve;
+    keepalive 16;
+}
+
+server {
+    listen 8080;
+    server_tokens off;
+    client_max_body_size 64k;
+    limit_conn conns 30;
+
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $remote_addr;
+    proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
+    # Next.js streams pages (Suspense); pass chunks through as they arrive.
+    proxy_buffering off;
+
+    error_page 429 @limited;
+    location @limited {
+        default_type text/plain;
+        add_header Retry-After 10 always;
+        return 429 "Too many requests from your address. Wait a few seconds and try again.\n";
+    }
+
+    location = /edge-health {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+
+    # Content-hashed build assets: immutable and cheap, never limited.
+    location /_next/static/ {
+        limit_conn conns 60;
+        proxy_pass http://web;
+    }
+
+    location /api/ {
+        limit_req zone=api burst=30 nodelay;
+        proxy_pass http://web;
+    }
+
+    location / {
+        limit_req zone=pages burst=120 nodelay;
+        proxy_pass http://web;
+    }
+}
