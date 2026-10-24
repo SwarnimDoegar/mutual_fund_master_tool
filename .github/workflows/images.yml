@@ -4,10 +4,10 @@
 # the compose file and configs they check out (MF_IMAGE_REGISTRY / MF_IMAGE_TAG).
 name: images
 
+# Only main: a merged PR (or any push) to main publishes; other branches never do.
 on:
   push:
     branches: [main]
-  workflow_dispatch:
 
 permissions:
   contents: read
