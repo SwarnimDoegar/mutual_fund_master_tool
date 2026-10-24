@@ -131,7 +131,8 @@ pnpm typecheck && pnpm lint && pnpm build
 ```
 
 Web settings: `MF_API_URL` (runtime), `SITE_URL` (public origin for canonical links, sitemap and
-robots; also a build arg), `MF_WEB_PORT` (13000).
+robots; also a build arg), `MF_WEB_PORT` (13000), `MF_WEB_BIND` (127.0.0.1; `0.0.0.0` when a proxy on
+another host fronts the UI).
 
 ## Commands
 

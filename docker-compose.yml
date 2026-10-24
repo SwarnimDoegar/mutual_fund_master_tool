@@ -114,7 +114,8 @@ services:
       MF_API_URL: http://api:8080
       SITE_URL: ${SITE_URL:-http://localhost:13000}
     ports:
-      - "127.0.0.1:${MF_WEB_PORT:-13000}:3000"
+      # MF_WEB_BIND=0.0.0.0 when a reverse proxy or tunnel on another host fronts the UI
+      - "${MF_WEB_BIND:-127.0.0.1}:${MF_WEB_PORT:-13000}:3000"
 
 volumes:
   clickhouse-data:
