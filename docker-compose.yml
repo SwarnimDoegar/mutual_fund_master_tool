@@ -108,8 +108,11 @@ services:
     image: mf-web:latest
     restart: unless-stopped
     depends_on:
+      # started, not healthy: on a fresh install the API keeps restarting until the first
+      # backfill has created its tables, and the UI must come up anyway (it shows an error
+      # state until the API answers)
       api:
-        condition: service_healthy
+        condition: service_started
     environment:
       MF_API_URL: http://api:8080
       SITE_URL: ${SITE_URL:-http://localhost:13000}
