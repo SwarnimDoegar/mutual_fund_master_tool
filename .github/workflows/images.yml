@@ -6,7 +6,7 @@ name: images
 
 on:
   push:
-    branches: [main, rest-api]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
