@@ -33,12 +33,15 @@ services:
       timeout: 5s
       retries: 5
 
+  # The three images below build from source by default. To run published ones instead, set
+  # MF_IMAGE_REGISTRY=ghcr.io/<owner>/ and MF_IMAGE_TAG=<commit SHA> (built by
+  # .github/workflows/images.yml), then `docker compose pull && docker compose up -d --no-build`.
   mf:
     build:
       context: .
       dockerfile: docker/Dockerfile
       target: pipeline
-    image: mf-pipeline:latest
+    image: ${MF_IMAGE_REGISTRY:-}mf-pipeline:${MF_IMAGE_TAG:-latest}
     restart: unless-stopped
     depends_on:
       clickhouse:
@@ -77,7 +80,7 @@ services:
       context: .
       dockerfile: docker/Dockerfile
       target: api
-    image: mf-api:latest
+    image: ${MF_IMAGE_REGISTRY:-}mf-api:${MF_IMAGE_TAG:-latest}
     restart: unless-stopped
     depends_on:
       clickhouse:
@@ -105,7 +108,7 @@ services:
       context: web
       args:
         SITE_URL: ${SITE_URL:-http://localhost:13000}
-    image: mf-web:latest
+    image: ${MF_IMAGE_REGISTRY:-}mf-web:${MF_IMAGE_TAG:-latest}
     restart: unless-stopped
     depends_on:
       # started, not healthy: on a fresh install the API keeps restarting until the first

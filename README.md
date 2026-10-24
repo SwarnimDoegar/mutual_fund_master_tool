@@ -42,6 +42,14 @@ Web UI: http://localhost:13000. API reference: http://localhost:18080/docs (Open
 curl -s 'localhost:18080/v1/screener?category=Flexi%20Cap%20Fund&plan=Direct&peer_only=true&sort=-sharpe_3y_monthly&limit=5'
 ```
 
+**Published images.** Every push to `main` or `rest-api` builds `mf-pipeline`, `mf-api` and `mf-web`
+in GitHub Actions (`.github/workflows/images.yml`) and publishes them to
+`ghcr.io/swarnimdoegar/<image>`, tagged with the full commit SHA and the branch name. To run them
+instead of building on the host, check out that commit and set `MF_IMAGE_REGISTRY=ghcr.io/swarnimdoegar/`
+and `MF_IMAGE_TAG=<sha>` in `.env`, then `docker compose pull && docker compose up -d --no-build`.
+`mf-web` bakes `SITE_URL` in at build time (repository variable `SITE_URL`, default
+`https://mf.minraws.click`).
+
 ## REST API
 
 Read-only, JSON, versioned under `/v1`. Every response is `{"data": ..., "meta": {"as_of_date",
