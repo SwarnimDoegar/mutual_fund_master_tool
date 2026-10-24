@@ -6,6 +6,9 @@
                  peak for fund_risk drops from 2.7 GB to 1.4 GB with these thresholds. -->
             <max_bytes_before_external_sort>200000000</max_bytes_before_external_sort>
             <max_bytes_before_external_group_by>200000000</max_bytes_before_external_group_by>
+            <!-- The sampling profiler only feeds trace_log, which is off (config.d/mf.xml). -->
+            <query_profiler_real_time_period_ns>0</query_profiler_real_time_period_ns>
+            <query_profiler_cpu_time_period_ns>0</query_profiler_cpu_time_period_ns>
         </default>
     </profiles>
 </clickhouse>

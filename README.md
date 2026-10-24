@@ -292,6 +292,12 @@ Formulas follow Morningstar's published methodology, which Value Research uses f
 
 Both are loaded into ClickHouse on every run, so edits take effect at the next run.
 
+ClickHouse runs a small-host profile (`docker/clickhouse/config.d/mf.xml`): its self-monitoring
+logs are off (only `query_log` is kept, for 7 days), caches and background pools are sized for a
+1–4 core VM, and big sorts and aggregations spill to disk. Measured with ClickHouse held to 1 CPU
+and 2 GB: a full refresh takes ~4 minutes and peaks at 1.7 GB; idle it holds ~0.3 GB of private
+memory.
+
 ## Development
 
 No local Rust toolchain is needed; `./dev.sh` runs cargo in the official image on the compose

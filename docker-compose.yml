@@ -26,9 +26,12 @@ services:
         hard: 262144
     healthcheck:
       test: ["CMD", "clickhouse-client", "--query", "SELECT 1"]
-      interval: 5s
+      # probe every 2s while starting (so dependants start promptly), then every 30s
+      start_period: 120s
+      start_interval: 2s
+      interval: 30s
       timeout: 5s
-      retries: 30
+      retries: 5
 
   mf:
     build:
