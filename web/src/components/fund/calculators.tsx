@@ -14,7 +14,7 @@ function yearsBefore(iso: string, years: number, floor: string | null): string {
 
 function Result({ items }: { items: [string, React.ReactNode][] }) {
   return (
-    <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 rounded-lg bg-surface-2 p-3 text-sm">
+    <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 rounded border border-border bg-surface-2 p-3 text-sm">
       {items.map(([k, v]) => (
         <div key={k}>
           <dt className="text-xs text-muted">{k}</dt>

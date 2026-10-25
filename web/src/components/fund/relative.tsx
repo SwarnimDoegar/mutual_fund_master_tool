@@ -50,7 +50,7 @@ export async function RelativeSection({ s, v }: { s: Scheme; v: string }) {
       {groups.length === 0 ? (
         <Empty>Needs at least a year of NAVs and a benchmark for this category.</Empty>
       ) : (
-        <div className="-mx-4 overflow-x-auto sm:-mx-5">
+        <div className="panel-table">
           <table className="table">
             <thead>
               <tr>

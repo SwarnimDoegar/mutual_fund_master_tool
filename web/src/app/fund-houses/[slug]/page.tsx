@@ -3,7 +3,7 @@ import { cacheLife } from "next/cache";
 import Link from "next/link";
 import { Suspense } from "react";
 import { FundTable, Pagination } from "@/components/fund-table";
-import { Card, CardSkeleton, Empty, PageTitle, PercentileBar, Stat } from "@/components/ui";
+import { Card, CardSkeleton, Empty, Figures, PageTitle, PercentileBar, Stat } from "@/components/ui";
 import { VERSIONED, currentVersion } from "@/lib/api/server";
 import type { FundHouse } from "@/lib/api/types";
 import { fundHouseBySlug } from "@/lib/catalog";
@@ -96,7 +96,7 @@ async function HouseBody({ h, plan, sort, offset, cols, columns, v }: BodyProps)
           ))}
         </nav>
       </PageTitle>
-      <div className="card grid grid-cols-2 gap-4 p-4 sm:grid-cols-3 lg:grid-cols-6">
+      <Figures className="card px-4 py-3">
         <Stat label="Active schemes">{h.active_schemes?.toLocaleString("en-IN")}</Stat>
         <Stat label="Ranked funds">{h.ranked_funds}</Stat>
         <Stat label="Categories">{h.categories}</Stat>
@@ -105,7 +105,7 @@ async function HouseBody({ h, plan, sort, offset, cols, columns, v }: BodyProps)
         </Stat>
         <Stat label="Funds in top quarter">{pct(h.pct_top_quartile_cagr_3y)}</Stat>
         <Stat label="NAV history since">{date(h.first_nav_date)}</Stat>
-      </div>
+      </Figures>
       <Card
         title="Ranked funds"
         subtitle="Active Growth options in peer-ranked categories. Click a column to sort."

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Source_Sans_3 } from "next/font/google";
 import Link from "next/link";
 import { Suspense } from "react";
 import { SearchBox } from "@/components/search-box";
@@ -7,8 +7,7 @@ import { DataFreshness } from "@/components/data-freshness";
 import { NAV_LINKS, SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/lib/site";
 import "./globals.css";
 
-const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+const sourceSans = Source_Sans_3({ variable: "--font-source-sans", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -19,38 +18,38 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f7f8fa" },
-    { media: "(prefers-color-scheme: dark)", color: "#0c0f14" },
+    { media: "(prefers-color-scheme: light)", color: "#0f172a" },
+    { media: "(prefers-color-scheme: dark)", color: "#090d13" },
   ],
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en-IN" className={`${geistSans.variable} ${geistMono.variable} h-full`}>
+    <html lang="en-IN" className={`${sourceSans.variable} h-full`}>
       <body className="flex min-h-full flex-col">
         <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 btn">
           Skip to content
         </a>
-        <header className="sticky top-0 z-40 border-b border-border bg-surface/90 backdrop-blur">
-          <div className="page-x flex items-center gap-4 py-2.5">
-            <Link href="/" className="flex shrink-0 items-center gap-2 font-semibold tracking-tight">
+        <header className="sticky top-0 z-40 border-b border-shell-border bg-shell text-shell-text">
+          <div className="page-x flex h-14 items-center gap-6">
+            <Link href="/" className="flex shrink-0 items-center gap-2 text-[17px] font-bold text-white">
               <Logo />
               <span className="hidden sm:inline">{SITE_NAME}</span>
             </Link>
-            <nav aria-label="Main" className="hidden items-center gap-1 text-sm lg:flex">
+            <nav aria-label="Main" className="hidden h-full items-stretch gap-5 text-sm lg:flex">
               {NAV_LINKS.map((l) => (
-                <Link key={l.href} href={l.href} className="rounded-md px-2.5 py-1.5 text-muted hover:bg-surface-2 hover:text-text">
+                <Link key={l.href} href={l.href} className="flex items-center border-y-2 border-transparent font-semibold text-shell-muted hover:border-b-shell-muted hover:text-white">
                   {l.label}
                 </Link>
               ))}
             </nav>
-            <div className="ml-auto w-full max-w-md">
+            <div className="shell-search ml-auto w-full max-w-md">
               <SearchBox />
             </div>
           </div>
-          <nav aria-label="Main" className="page-x flex overflow-x-auto pb-2 text-[13px] sm:gap-0.5 sm:text-sm lg:hidden">
+          <nav aria-label="Main" className="page-x flex gap-4 overflow-x-auto border-t border-shell-border text-[13px] lg:hidden">
             {NAV_LINKS.map((l) => (
-              <Link key={l.href} href={l.href} className="shrink-0 rounded-md px-1.5 py-1 text-muted first:-ml-1.5 hover:bg-surface-2 hover:text-text sm:px-2">
+              <Link key={l.href} href={l.href} className="shrink-0 py-2 font-semibold text-shell-muted hover:text-white">
                 {l.label}
               </Link>
             ))}
@@ -62,7 +61,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         </main>
 
         <footer className="border-t border-border bg-surface">
-          <div className="page-x grid gap-3 py-6 text-xs text-muted sm:grid-cols-2">
+          <div className="page-x grid gap-3 py-5 text-xs text-muted sm:grid-cols-2">
             <div className="space-y-1">
               <p>
                 NAV data from AMFI via{" "}
@@ -95,11 +94,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   );
 }
 
+/** A lens over a rising line, in the app bar's colours. */
 function Logo() {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden className="text-brand">
-      <rect width="24" height="24" rx="6" fill="currentColor" />
-      <path d="M5 16l4-5 3 3 6-7" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden>
+      <circle cx="9.5" cy="9.5" r="7.25" fill="none" stroke="currentColor" strokeWidth="2" />
+      <path d="M14.8 14.8 20 20" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+      <path d="M5.5 12l2.5-3 2 1.8 3-4.3" fill="none" stroke="#8fb0ff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }

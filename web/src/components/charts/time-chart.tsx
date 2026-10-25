@@ -61,7 +61,9 @@ export function TimeChart({
       const common = {
         lineWidth: 2 as const,
         priceLineVisible: false,
-        lastValueVisible: series.length <= 3,
+        // The legend above the chart carries each series' latest value; axis tags would collide
+        // with the scale's own labels.
+        lastValueVisible: false,
         priceFormat: { type: "custom" as const, formatter, minMove: 0.0001 },
         lineStyle: s.dashed ? LineStyle.Dashed : LineStyle.Solid,
       };
@@ -123,9 +125,9 @@ export function TimeChart({
                 className="inline-block h-0.5 w-3 rounded"
                 style={{ background: theme ? (s.fill ? theme.neg : theme.series[(s.color ?? i) % theme.series.length]) : undefined }}
               />
-              <span className="text-muted">{s.name}</span>
+              <span className="whitespace-nowrap text-muted">{s.name}</span>
               <span className="num font-semibold">{values[i] != null ? formatter(values[i]!) : "—"}</span>
-              {!hover && changes[i] && <span className="num text-muted">({changes[i]})</span>}
+              {!hover && changes[i] && <span className="num text-muted max-sm:hidden">({changes[i]})</span>}
             </span>
           ))}
         </div>

@@ -72,7 +72,7 @@ export function ColumnPicker({ columns }: { columns: string[] }) {
       <dialog
         ref={dialog}
         aria-labelledby="column-picker-title"
-        className="m-auto w-[min(56rem,calc(100vw-1.5rem))] rounded-2xl border border-border bg-surface p-0 text-text shadow-2xl backdrop:bg-black/40"
+        className="m-auto w-[min(56rem,calc(100vw-1.5rem))] rounded-md border border-border-strong bg-surface p-0 text-text shadow-[0_16px_48px_rgb(15_23_42/0.3)] backdrop:bg-slate-950/50"
         onClick={(e) => e.target === dialog.current && dialog.current?.close()}
       >
         <div className="flex max-h-[85vh] flex-col">
@@ -102,10 +102,10 @@ export function ColumnPicker({ columns }: { columns: string[] }) {
                   if (!items.length) return null;
                   return (
                     <fieldset key={g}>
-                      <legend className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">{g}</legend>
+                      <legend className="mb-1.5 label">{g}</legend>
                       <div className="grid gap-x-4 gap-y-1 sm:grid-cols-2">
                         {items.map((m) => (
-                          <label key={m.key} className="flex cursor-pointer items-start gap-2 rounded-md px-1.5 py-1 text-sm hover:bg-surface-2" title={m.description}>
+                          <label key={m.key} className="flex cursor-pointer items-start gap-2 rounded px-1.5 py-1 text-sm hover:bg-surface-2" title={m.description}>
                             <input type="checkbox" className="mt-0.5 accent-[var(--brand)]" checked={draft.includes(m.key)} onChange={() => toggle(m.key)} />
                             <span>{m.label}</span>
                           </label>
@@ -118,11 +118,11 @@ export function ColumnPicker({ columns }: { columns: string[] }) {
             </div>
 
             <div className="flex min-h-0 flex-col border-t border-border md:border-t-0">
-              <h3 className="px-4 pt-3 text-xs font-semibold uppercase tracking-wide text-muted">Shown, in order</h3>
+              <h3 className="px-4 pt-3 label">Shown, in order</h3>
               <ol className="min-h-0 flex-1 space-y-1 overflow-y-auto px-4 py-2 max-md:max-h-48">
                 {draft.length === 0 && <li className="py-4 text-center text-sm text-muted">Pick at least one column.</li>}
                 {draft.map((k, i) => (
-                  <li key={k} className="flex items-center gap-1 rounded-md bg-surface-2 py-1 pl-2.5 pr-1 text-sm">
+                  <li key={k} className="flex items-center gap-1 rounded border border-border bg-surface-2 py-1 pl-2.5 pr-1 text-sm">
                     <span className="min-w-0 flex-1 truncate" title={metric(k).label}>
                       {metric(k).label}
                     </span>

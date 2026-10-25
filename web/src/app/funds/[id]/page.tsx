@@ -56,6 +56,7 @@ const SECTIONS = [
   ["rolling", "Rolling"],
   ["drawdowns", "Drawdowns"],
   ["sip", "SIP"],
+  ["ranks", "Peer ranks"],
 ] as const;
 
 async function Fund({ params }: { params: Promise<{ id: string }> }) {
@@ -78,11 +79,11 @@ async function FundBody({ code, v }: { code: number; v: string }) {
     <div className="space-y-6">
       <FundHeader s={s} />
 
-      <nav aria-label="Sections" className="bleed-x sticky top-[57px] z-30 overflow-x-auto border-b border-border bg-bg/90 py-2 backdrop-blur max-lg:top-[93px]">
-        <ul className="flex gap-1 text-sm">
+      <nav aria-label="Sections" className="bleed-x sticky top-[57px] z-30 border-b border-border bg-bg max-lg:top-[94px]">
+        <ul className="tabs">
           {SECTIONS.map(([id, label]) => (
             <li key={id}>
-              <a href={`#${id}`} className="block rounded-md px-2.5 py-1 text-muted hover:bg-surface-2 hover:text-text">
+              <a href={`#${id}`}>
                 {label}
               </a>
             </li>
@@ -133,26 +134,32 @@ async function FundBody({ code, v }: { code: number; v: string }) {
               <SipSection s={s} v={v} />
             </Suspense>
           </div>
+          <div className="min-w-0 2xl:col-span-2">
+            <Suspense fallback={<CardSkeleton title="Peer ranks" height="h-96" />}>
+              <RanksCard s={s} v={v} />
+            </Suspense>
+          </div>
+          <div className="grid min-w-0 content-start gap-6 md:grid-cols-2 2xl:col-span-2">
+            <Card title="Lumpsum calculator" subtitle="Value today of a one-time investment">
+              <LumpsumCalculator code={s.scheme_code} inception={s.inception_date ?? null} asOf={s.last_nav_date} />
+            </Card>
+            <Suspense fallback={null}>
+              <QualityCard code={s.scheme_code} v={v} />
+            </Suspense>
+            {s.option !== "Growth" && (
+              <Suspense fallback={null}>
+                <PayoutsCard s={s} v={v} />
+              </Suspense>
+            )}
+          </div>
         </div>
 
-        <aside className="min-w-0 space-y-6">
+        {/* A short rail of reference facts that stays in view beside the long main column, on
+            screens tall enough to show all of it. */}
+        <aside className="rail-sticky min-w-0 space-y-6 lg:self-start">
           <KeyFacts s={s} />
           <PlanLinks s={s} />
-          <Suspense fallback={<CardSkeleton title="Peer ranks" height="h-96" />}>
-            <RanksCard s={s} v={v} />
-          </Suspense>
-          <Card title="Lumpsum calculator" subtitle="Value today of a one-time investment">
-            <LumpsumCalculator code={s.scheme_code} inception={s.inception_date ?? null} asOf={s.last_nav_date} />
-          </Card>
-          {s.option !== "Growth" && (
-            <Suspense fallback={null}>
-              <PayoutsCard s={s} v={v} />
-            </Suspense>
-          )}
-          <Suspense fallback={null}>
-            <QualityCard code={s.scheme_code} v={v} />
-          </Suspense>
-          <p className="text-xs text-muted">
+          <p className="text-[13px] text-muted">
             Compare this fund with others in the{" "}
             <Link href={`/compare?codes=${s.scheme_code}`} className="link">
               comparison tool

@@ -36,7 +36,7 @@ function themeOptions(t: ChartTheme): DeepPartial<ChartOptions> {
     layout: {
       background: { type: ColorType.Solid, color: "transparent" },
       textColor: t.muted,
-      fontFamily: "var(--font-geist-sans), ui-sans-serif, system-ui",
+      fontFamily: getComputedStyle(document.body).fontFamily,
       fontSize: 11,
       attributionLogo: false,
     },

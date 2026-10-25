@@ -29,7 +29,7 @@ const FIELDS: Field[] = [
 
 function RiskTable({ rows }: { rows: RiskRow[] }) {
   return (
-    <div className="-mx-4 overflow-x-auto sm:-mx-5">
+    <div className="panel-table">
       <table className="table">
         <thead>
           <tr>

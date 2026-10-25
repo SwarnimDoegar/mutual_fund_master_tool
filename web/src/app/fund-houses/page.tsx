@@ -31,7 +31,7 @@ async function HouseTable({ v }: { v: string }) {
   const rows = (await fundHouses(v)).sort((a, b) => (b.ranked_funds ?? 0) - (a.ranked_funds ?? 0) || a.fund_house.localeCompare(b.fund_house));
   return (
     <Card>
-      <div className="-mx-4 overflow-x-auto sm:-mx-5">
+      <div className="panel-table">
         <table className="table">
           <thead>
             <tr>

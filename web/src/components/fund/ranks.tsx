@@ -17,6 +17,7 @@ export async function RanksCard({ s, v }: { s: Scheme; v: string }) {
 
   return (
     <Card
+      id="ranks"
       title="Peer ranks"
       subtitle={
         s.category ? (
@@ -31,7 +32,7 @@ export async function RanksCard({ s, v }: { s: Scheme; v: string }) {
       ) : sorted.length === 0 ? (
         <Empty>No ranks yet.</Empty>
       ) : (
-        <ul className="space-y-2.5 text-sm">
+        <ul className="grid gap-x-10 gap-y-2.5 text-sm sm:grid-cols-2 xl:grid-cols-3">
           {sorted.map((r) => {
             const d = metric(r.metric);
             return (

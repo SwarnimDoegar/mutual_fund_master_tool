@@ -32,8 +32,8 @@ export async function DrawdownSection({ code, v }: { code: number; v: string }) 
         />
       )}
       {rows.length > 0 && (
-        <div className="-mx-4 mt-6 overflow-x-auto sm:-mx-5">
-          <h3 className="px-4 pb-1 text-sm font-medium sm:px-5">The five deepest falls</h3>
+        <div className="panel-table mt-6">
+          <h3 className="px-4 pb-1 text-sm font-medium">The five deepest falls</h3>
           <table className="table">
             <thead>
               <tr>

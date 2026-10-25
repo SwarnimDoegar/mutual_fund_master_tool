@@ -90,7 +90,7 @@ export function SearchBox({ onPick, placeholder = "Search funds, AMCs or scheme 
 
   return (
     <div ref={boxRef} className="relative">
-      <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-faint" aria-hidden />
+      <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 opacity-60" aria-hidden />
       <input
         type="search"
         role="combobox"
@@ -111,7 +111,7 @@ export function SearchBox({ onPick, placeholder = "Search funds, AMCs or scheme 
         <ul
           id={listId}
           role="listbox"
-          className="absolute left-0 right-0 top-full z-50 mt-1 max-h-[70vh] overflow-auto rounded-xl border border-border bg-surface p-1 shadow-lg"
+          className="absolute left-0 right-0 top-full z-50 mt-1 max-h-[70vh] overflow-auto rounded-md border border-border-strong bg-surface py-1 text-text shadow-[0_8px_24px_rgb(15_23_42/0.18)]"
         >
           {rows.length === 0 && <li className="px-3 py-2 text-sm text-muted">{loading ? "Searching…" : "No matching funds"}</li>}
           {rows.map((r, i) => (
@@ -120,7 +120,7 @@ export function SearchBox({ onPick, placeholder = "Search funds, AMCs or scheme 
               id={`${id}-opt-${i}`}
               role="option"
               aria-selected={i === active}
-              className={`cursor-pointer rounded-lg px-3 py-2 ${i === active ? "bg-surface-2" : "hover:bg-surface-2"}`}
+              className={`cursor-pointer px-3 py-2 ${i === active ? "bg-brand-soft" : "hover:bg-surface-2"}`}
               onPointerDown={(e) => {
                 e.preventDefault();
                 choose(r);
@@ -136,7 +136,7 @@ export function SearchBox({ onPick, placeholder = "Search funds, AMCs or scheme 
             </li>
           ))}
           {!onPick && rows.length > 0 && (
-            <li className="border-t border-border px-3 py-2 text-xs">
+            <li className="mt-1 border-t border-border px-3 pt-2 pb-1 text-xs">
               <button type="button" className="link" onPointerDown={(e) => { e.preventDefault(); router.push(`/funds?q=${encodeURIComponent(q.trim())}`); setOpen(false); }}>
                 See all results for “{q.trim()}”
               </button>

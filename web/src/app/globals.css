@@ -1,43 +1,59 @@
 @import "tailwindcss";
 
 /* Design tokens. Light by default, dark when the OS asks for it. Charts read the same
-   variables (src/components/charts/theme.ts), so they follow the theme too. */
+   variables (src/components/charts/use-chart.ts), so they follow the theme too.
+   The app bar (--shell*) is navy in both themes; the brand blue marks links, selection and the
+   primary action only, and green/red only signed numbers. */
 :root {
-  --bg: #f7f8fa;
+  --bg: #f4f6f9;
   --surface: #ffffff;
-  --surface-2: #f1f3f6;
-  --border: #e3e6eb;
-  --text: #111827;
-  --muted: #5b6474;
-  --faint: #8a93a3;
-  --brand: #2f5bea;
-  --brand-soft: #e8eefe;
-  --pos: #0f8a5f;
-  --neg: #d13b3b;
-  --warn: #b7791f;
-  --series-1: #2f5bea;
-  --series-2: #e07b24;
-  --series-3: #0f9d8a;
-  --series-4: #a23bd1;
-  --series-5: #d13b6f;
+  --surface-2: #eff2f6;
+  --border: #dde2e9;
+  --border-strong: #c2c9d4;
+  --text: #0f172a;
+  --muted: #536074;
+  --faint: #7a8597;
+  --brand: #1f4fbf;
+  --brand-soft: #e8eefb;
+  --on-brand: #ffffff;
+  --pos: #08743f;
+  --neg: #c4261d;
+  --warn: #9a5b00;
+  --shell: #0f172a;
+  --shell-2: #1e293b;
+  --shell-border: #334155;
+  --shell-text: #e2e8f0;
+  --shell-muted: #9aa8bc;
+  --series-1: #1f4fbf;
+  --series-2: #d9730d;
+  --series-3: #0f8b7e;
+  --series-4: #8b3fc4;
+  --series-5: #c2305f;
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0c0f14;
-    --surface: #131820;
-    --surface-2: #1a202b;
-    --border: #262e3b;
-    --text: #e7eaf0;
-    --muted: #9aa4b5;
-    --faint: #6b7586;
-    --brand: #7a9bff;
-    --brand-soft: #1b2440;
-    --pos: #3ccf91;
-    --neg: #ff6b6b;
-    --warn: #e0a84a;
-    --series-1: #7a9bff;
+    --bg: #0e131a;
+    --surface: #141a22;
+    --surface-2: #1a222c;
+    --border: #252f3c;
+    --border-strong: #354253;
+    --text: #e6eaf0;
+    --muted: #9aa6b6;
+    --faint: #6f7b8c;
+    --brand: #82a8ff;
+    --brand-soft: #1a2742;
+    --on-brand: #0b1220;
+    --pos: #3fc685;
+    --neg: #ff6b61;
+    --warn: #e0a243;
+    --shell: #090d13;
+    --shell-2: #161d27;
+    --shell-border: #2a3443;
+    --shell-text: #e2e8f0;
+    --shell-muted: #8d9bb0;
+    --series-1: #82a8ff;
     --series-2: #f0a050;
     --series-3: #3fd0bb;
     --series-4: #c58af0;
@@ -51,26 +67,48 @@
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-text: var(--text);
   --color-muted: var(--muted);
   --color-faint: var(--faint);
   --color-brand: var(--brand);
   --color-brand-soft: var(--brand-soft);
+  --color-on-brand: var(--on-brand);
   --color-pos: var(--pos);
   --color-neg: var(--neg);
   --color-warn: var(--warn);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-shell: var(--shell);
+  --color-shell-2: var(--shell-2);
+  --color-shell-border: var(--shell-border);
+  --color-shell-text: var(--shell-text);
+  --color-shell-muted: var(--shell-muted);
+  --font-sans: var(--font-source-sans);
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
 
 body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
   -webkit-font-smoothing: antialiased;
+  caret-color: var(--brand);
+  accent-color: var(--brand);
+  scrollbar-color: var(--border-strong) transparent;
 }
 
-/* Numbers line up in tables and stat strips. */
+::selection {
+  background: var(--brand-soft);
+  color: var(--text);
+}
+
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* Numbers line up in tables and figure rows. */
 .num {
   font-variant-numeric: tabular-nums;
 }
@@ -80,60 +118,109 @@ body {
   .page-x {
     @apply mx-auto w-full max-w-[120rem] px-4 sm:px-6 lg:px-8;
   }
-  /* Full-bleed strip inside .page-x (e.g. the fund page's section bar). */
+  /* Full-bleed strip inside .page-x (e.g. the fund page's section tabs). */
   .bleed-x {
     @apply -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8;
   }
+  /* A data panel: white, ruled, small radius, no shadow. Its header strip (.panel-head) holds
+     the title and the panel's own controls. */
   .card {
-    @apply rounded-xl border border-border bg-surface;
+    @apply rounded-md border border-border bg-surface;
   }
   .card-pad {
-    @apply p-4 sm:p-5;
+    @apply p-4;
+  }
+  /* A table that runs to a panel's edges (sideways scroll when it is wider). Flush with the
+     header strip when it opens the panel body, and with the bottom edge when it ends it. */
+  .panel-table {
+    @apply -mx-4 overflow-x-auto;
+  }
+  .panel-table:first-child {
+    @apply -mt-4;
+  }
+  .panel-table:last-child {
+    @apply -mb-4;
+  }
+  .panel-head {
+    @apply flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-border px-4 py-2.5;
   }
   .h-section {
-    @apply text-base font-semibold tracking-tight;
+    @apply text-[15px] font-semibold leading-snug;
+  }
+  .h-page {
+    @apply text-[26px] font-bold leading-tight sm:text-[28px];
   }
   .link {
-    @apply text-brand hover:underline underline-offset-2;
+    @apply text-brand underline decoration-brand/35 underline-offset-[3px] hover:decoration-brand;
+  }
+  /* A link that is the row's subject (fund names in tables): plain until hovered. */
+  .row-link {
+    @apply font-semibold text-text hover:text-brand hover:underline underline-offset-[3px];
   }
   .table {
     @apply w-full text-sm;
   }
   .table th {
-    @apply px-3 py-2 text-left text-xs font-medium text-muted whitespace-nowrap;
+    @apply border-b border-border-strong bg-surface-2 px-3 py-2 text-left text-xs font-semibold text-muted whitespace-nowrap;
   }
   .table td {
-    @apply px-3 py-2 border-t border-border whitespace-nowrap;
+    @apply px-3 py-[7px] border-t border-border whitespace-nowrap;
+  }
+  .table tbody tr:first-child td {
+    @apply border-t-0;
   }
   .table .r {
     @apply text-right;
   }
   .chip {
-    @apply inline-flex items-center rounded-md border border-border bg-surface-2 px-2 py-0.5 text-xs text-muted;
+    @apply inline-flex items-center rounded border border-border bg-surface px-2 py-0.5 text-[13px] text-text;
   }
   .btn {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium hover:bg-surface-2 disabled:opacity-50;
+    @apply inline-flex h-8 items-center justify-center gap-1.5 rounded border border-border-strong bg-surface px-3 text-[13px] font-semibold text-text hover:bg-surface-2 disabled:opacity-50;
   }
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-lg bg-brand px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50;
+    @apply inline-flex h-8 items-center justify-center gap-1.5 rounded border border-brand bg-brand px-3 text-[13px] font-semibold text-on-brand hover:brightness-110 disabled:opacity-50;
   }
   .input {
-    @apply w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20;
+    @apply h-8 w-full rounded border border-border-strong bg-surface px-2.5 text-sm text-text outline-none placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand/25;
+  }
+  .label {
+    @apply text-xs font-semibold text-muted;
   }
   /* Segmented control. On narrow screens it scrolls sideways instead of wrapping labels or
      overflowing its container. */
   .seg {
-    @apply inline-flex max-w-full overflow-x-auto rounded-lg border border-border bg-surface-2 p-0.5 text-xs;
+    @apply inline-flex max-w-full overflow-x-auto rounded border border-border-strong bg-surface text-xs;
     scrollbar-width: thin;
   }
   .seg > * {
-    @apply shrink-0 whitespace-nowrap rounded-md px-2.5 py-1 text-muted hover:text-text;
+    @apply shrink-0 whitespace-nowrap border-l border-border px-2.5 py-1 font-semibold text-muted first:border-l-0 hover:bg-surface-2 hover:text-text;
   }
   .seg > [aria-pressed="true"],
   .seg > [aria-current="page"] {
-    @apply bg-surface text-text shadow-sm;
+    @apply bg-text text-surface hover:bg-text hover:text-surface;
+  }
+  /* Underlined tabs (the fund page's sections). */
+  .tabs {
+    @apply flex gap-5 overflow-x-auto text-sm;
+    scrollbar-width: none;
+  }
+  .tabs a {
+    @apply -mb-px block shrink-0 border-b-2 border-transparent py-2.5 font-semibold text-muted hover:border-border-strong hover:text-text;
   }
   .skeleton {
-    @apply animate-pulse rounded-md bg-surface-2;
+    @apply animate-pulse rounded-sm bg-surface-2;
+  }
+  /* Pinned beside a long main column (below the app bar and section tabs) only when the
+     viewport can show the whole rail. */
+  @media (width >= 64rem) and (height >= 860px) {
+    .rail-sticky {
+      position: sticky;
+      top: 7.5rem;
+    }
+  }
+  /* The search field inside the navy app bar. */
+  .shell-search .input {
+    @apply border-shell-border bg-shell-2 text-shell-text placeholder:text-shell-muted focus:border-shell-muted focus:ring-white/15;
   }
 }

@@ -2,3 +2,9 @@
 .env
 .playwright-mcp/
 .claude/worktrees/
+
+# Impeccable working files (decision sketches, review captures); PRODUCT.md, DESIGN.md and
+# .impeccable/surfaces are the durable records.
+.impeccable/mocks/
+.impeccable/review/
+.impeccable/config.local.json

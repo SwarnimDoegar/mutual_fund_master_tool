@@ -53,7 +53,7 @@ export function FundTable({
   return (
     <>
       {sortHref && sortKey && (
-        <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-muted">
+        <div className="mb-3 flex flex-wrap items-center gap-2 text-[13px] text-muted">
           {byName ? (
             <span>Sorted by fund name, {desc ? "Z to A" : "A to Z"}.</span>
           ) : (
@@ -61,7 +61,7 @@ export function FundTable({
               <span>
                 Sorted by <span className="font-medium text-text">{metric(sortKey).label}</span>, {desc ? "high to low" : "low to high"}.
               </span>
-              <Link href={sortHref(UNSORTED)} scroll={false} className="chip gap-1 hover:border-brand hover:text-text">
+              <Link href={sortHref(UNSORTED)} scroll={false} className="chip gap-1 font-semibold hover:bg-surface-2">
                 <X className="size-3" aria-hidden /> Clear sort
               </Link>
             </>
@@ -69,12 +69,12 @@ export function FundTable({
         </div>
       )}
     {/* Scrolls sideways inside the card when there are more columns than fit; the fund column stays put. */}
-    <div className="-mx-4 overflow-x-auto overscroll-x-contain sm:-mx-5">
+    <div className="panel-table overscroll-x-contain">
       <table className="table">
         <thead>
           <tr>
             <th
-              className="sticky left-0 z-10 min-w-56 bg-surface shadow-[1px_0_0_var(--border)] sm:min-w-72"
+              className="sticky left-0 z-10 min-w-56 bg-surface-2 shadow-[1px_0_0_var(--border)] sm:min-w-[24rem]"
               aria-sort={byName ? (desc ? "descending" : "ascending") : undefined}
             >
               {sortHref ? (
@@ -113,11 +113,11 @@ export function FundTable({
         <tbody>
           {rows.map((r, i) => (
             <tr key={r.scheme_code} className="[&:hover>td]:bg-surface-2">
-              <td className="sticky left-0 z-10 max-w-72 whitespace-normal bg-surface shadow-[1px_0_0_var(--border)] sm:max-w-md">
+              <td className="sticky left-0 z-10 max-w-72 whitespace-normal bg-surface shadow-[1px_0_0_var(--border)] sm:max-w-[28rem]">
                 <div className="flex gap-2">
                   {rankOffset !== undefined && <span className="num w-6 shrink-0 pt-px text-xs text-muted">{rankOffset + i + 1}</span>}
                   <div className="min-w-0">
-                    <Link href={fundHref(r.scheme_code, r.scheme_name)} className="font-medium hover:text-brand">
+                    <Link href={fundHref(r.scheme_code, r.scheme_name)} className="row-link">
                       {r.scheme_name}
                     </Link>
                     <div className="mt-0.5 truncate text-xs text-muted">

@@ -75,8 +75,8 @@ export async function CalendarSection({ code, v }: { code: number; v: string }) 
             Each cell is that month&apos;s return in percent (2.50 = +2.50%). Greener is better, redder is worse; blank means no data. * marks a
             partial month or year (the fund&apos;s first, or the current one so far). The last column is the calendar-year return.
           </p>
-          <div className="-mx-4 overflow-x-auto sm:-mx-5">
-            <table className="w-full min-w-[760px] border-separate border-spacing-0.5 px-4 text-xs sm:px-5">
+          <div className="panel-table">
+            <table className="w-full min-w-[760px] border-separate border-spacing-0.5 px-4 text-xs">
               <thead>
                 <tr>
                   <th className="text-left font-medium text-muted">Year</th>

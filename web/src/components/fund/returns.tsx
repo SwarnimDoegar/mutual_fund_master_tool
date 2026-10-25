@@ -36,7 +36,7 @@ export async function ReturnsSection({ s, v }: { s: Scheme; v: string }) {
       {rows.length === 0 ? (
         <Empty>No return history yet.</Empty>
       ) : (
-        <div className="-mx-4 overflow-x-auto sm:-mx-5">
+        <div className="panel-table">
           <table className="table">
             <thead>
               <tr>

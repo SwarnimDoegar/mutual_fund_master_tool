@@ -1,0 +1,1168 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-25T19:42:20+00:00",
+  "title": "Design System: Fund Lens",
+  "extensions": {
+    "colorMeta": {
+      "bg": {
+        "role": "neutral",
+        "displayName": "Cool Ground",
+        "canonical": "#f4f6f9",
+        "oklch": "oklch(97.2% 0.005 258)",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#242527",
+          "#404244",
+          "#606164",
+          "#818285",
+          "#a3a5a8",
+          "#c7c9cc",
+          "#edeff2"
+        ],
+        "cssVar": "--bg",
+        "theme": "light"
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Panel White",
+        "canonical": "#ffffff",
+        "oklch": "oklch(100.0% 0.000 90)",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ],
+        "cssVar": "--surface",
+        "theme": "light"
+      },
+      "surface-2": {
+        "role": "neutral",
+        "displayName": "Ruled Tint",
+        "canonical": "#eff2f6",
+        "oklch": "oklch(96.0% 0.006 255)",
+        "tonalRamp": [
+          "#090b0e",
+          "#232528",
+          "#404245",
+          "#5f6165",
+          "#808286",
+          "#a2a5a9",
+          "#c6c9cd",
+          "#eceff3"
+        ],
+        "cssVar": "--surface-2",
+        "theme": "light"
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#dde2e9",
+        "oklch": "oklch(91.1% 0.011 257)",
+        "tonalRamp": [
+          "#080b10",
+          "#22252a",
+          "#3e4248",
+          "#5d6268",
+          "#7e8389",
+          "#a1a5ac",
+          "#c5cad0",
+          "#eaeff6"
+        ],
+        "cssVar": "--border",
+        "theme": "light"
+      },
+      "border-strong": {
+        "role": "neutral",
+        "displayName": "Strong Hairline",
+        "canonical": "#c2c9d4",
+        "oklch": "oklch(83.4% 0.017 259)",
+        "tonalRamp": [
+          "#070b12",
+          "#20252e",
+          "#3d424b",
+          "#5b626b",
+          "#7c838d",
+          "#9fa5b0",
+          "#c3cad5",
+          "#e8effa"
+        ],
+        "cssVar": "--border-strong",
+        "theme": "light"
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#0f172a",
+        "oklch": "oklch(20.8% 0.040 266)",
+        "tonalRamp": [
+          "#0a0b0e",
+          "#23252a",
+          "#3d424d",
+          "#596173",
+          "#77829b",
+          "#9ca5b8",
+          "#c3c9d6",
+          "#eceef5"
+        ],
+        "cssVar": "--text",
+        "theme": "light"
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Slate Muted",
+        "canonical": "#536074",
+        "oklch": "oklch(48.6% 0.036 259)",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#22252a",
+          "#3c424c",
+          "#586271",
+          "#768398",
+          "#9ba6b6",
+          "#c3cad5",
+          "#ebeff4"
+        ],
+        "cssVar": "--muted",
+        "theme": "light"
+      },
+      "faint": {
+        "role": "neutral",
+        "displayName": "Slate Faint",
+        "canonical": "#7a8597",
+        "oklch": "oklch(61.4% 0.030 260)",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#232529",
+          "#3d424a",
+          "#5a626f",
+          "#788395",
+          "#9da6b3",
+          "#c4c9d3",
+          "#eceff3"
+        ],
+        "cssVar": "--faint",
+        "theme": "light"
+      },
+      "brand": {
+        "role": "primary",
+        "displayName": "Research Blue",
+        "canonical": "#1f4fbf",
+        "oklch": "oklch(46.8% 0.184 263)",
+        "tonalRamp": [
+          "#060b17",
+          "#19253c",
+          "#274073",
+          "#365cb0",
+          "#477bed",
+          "#79a3f9",
+          "#acc9ff",
+          "#e3efff"
+        ],
+        "cssVar": "--brand",
+        "theme": "light"
+      },
+      "brand-soft": {
+        "role": "primary",
+        "displayName": "Research Blue Wash",
+        "canonical": "#e8eefb",
+        "oklch": "oklch(94.8% 0.019 266)",
+        "tonalRamp": [
+          "#080b13",
+          "#21252e",
+          "#3d424c",
+          "#5c616c",
+          "#7d828e",
+          "#9fa5b1",
+          "#c3c9d6",
+          "#e9effc"
+        ],
+        "cssVar": "--brand-soft",
+        "theme": "light"
+      },
+      "on-brand": {
+        "role": "primary",
+        "displayName": "On-Brand",
+        "canonical": "#ffffff",
+        "oklch": "oklch(100.0% 0.000 90)",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ],
+        "cssVar": "--on-brand",
+        "theme": "light"
+      },
+      "pos": {
+        "role": "semantic",
+        "displayName": "Gain Green",
+        "canonical": "#08743f",
+        "oklch": "oklch(49.2% 0.122 154)",
+        "tonalRamp": [
+          "#060d08",
+          "#192a1e",
+          "#254c33",
+          "#307048",
+          "#3d9760",
+          "#78b68c",
+          "#add5b8",
+          "#e1f4e6"
+        ],
+        "cssVar": "--pos",
+        "theme": "light"
+      },
+      "neg": {
+        "role": "semantic",
+        "displayName": "Loss Red",
+        "canonical": "#c4261d",
+        "oklch": "oklch(53.2% 0.194 29)",
+        "tonalRamp": [
+          "#160605",
+          "#3a1b17",
+          "#6d2921",
+          "#a5362b",
+          "#de4538",
+          "#f17f70",
+          "#ffb3a7",
+          "#ffe5e0"
+        ],
+        "cssVar": "--neg",
+        "theme": "light"
+      },
+      "warn": {
+        "role": "semantic",
+        "displayName": "Caution Amber",
+        "canonical": "#9a5b00",
+        "oklch": "oklch(53.1% 0.119 65)",
+        "tonalRamp": [
+          "#100a04",
+          "#2f2215",
+          "#583b1d",
+          "#845522",
+          "#b2722a",
+          "#cb9a6a",
+          "#e4c2a3",
+          "#fcebdd"
+        ],
+        "cssVar": "--warn",
+        "theme": "light"
+      },
+      "shell": {
+        "role": "shell",
+        "displayName": "Navy Bar",
+        "canonical": "#0f172a",
+        "oklch": "oklch(20.8% 0.040 266)",
+        "tonalRamp": [
+          "#0a0b0e",
+          "#23252a",
+          "#3d424d",
+          "#596173",
+          "#77829b",
+          "#9ca5b8",
+          "#c3c9d6",
+          "#eceef5"
+        ],
+        "cssVar": "--shell",
+        "theme": "light"
+      },
+      "shell-2": {
+        "role": "shell",
+        "displayName": "Navy Raised",
+        "canonical": "#1e293b",
+        "oklch": "oklch(27.9% 0.037 260)",
+        "tonalRamp": [
+          "#0a0b0e",
+          "#22252a",
+          "#3c424c",
+          "#586272",
+          "#768399",
+          "#9ba6b6",
+          "#c3cad5",
+          "#ebeff4"
+        ],
+        "cssVar": "--shell-2",
+        "theme": "light"
+      },
+      "shell-border": {
+        "role": "shell",
+        "displayName": "Navy Rule",
+        "canonical": "#334155",
+        "oklch": "oklch(37.2% 0.039 257)",
+        "tonalRamp": [
+          "#0a0b0e",
+          "#22252a",
+          "#3b434d",
+          "#576272",
+          "#74849a",
+          "#9aa6b7",
+          "#c2cad6",
+          "#ebeff4"
+        ],
+        "cssVar": "--shell-border",
+        "theme": "light"
+      },
+      "shell-text": {
+        "role": "shell",
+        "displayName": "Bar Text",
+        "canonical": "#e2e8f0",
+        "oklch": "oklch(92.9% 0.013 256)",
+        "tonalRamp": [
+          "#080b10",
+          "#21252b",
+          "#3e4249",
+          "#5d6268",
+          "#7d838a",
+          "#a0a6ad",
+          "#c4cad1",
+          "#e9eff7"
+        ],
+        "cssVar": "--shell-text",
+        "theme": "light"
+      },
+      "shell-muted": {
+        "role": "shell",
+        "displayName": "Bar Muted",
+        "canonical": "#9aa8bc",
+        "oklch": "oklch(72.7% 0.033 257)",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#222529",
+          "#3c424b",
+          "#586270",
+          "#768396",
+          "#9ca6b5",
+          "#c3cad4",
+          "#ebeff3"
+        ],
+        "cssVar": "--shell-muted",
+        "theme": "light"
+      },
+      "series-1": {
+        "role": "chart",
+        "displayName": "Series 1 Blue",
+        "canonical": "#1f4fbf",
+        "oklch": "oklch(46.8% 0.184 263)",
+        "tonalRamp": [
+          "#060b17",
+          "#19253c",
+          "#274073",
+          "#365cb0",
+          "#477bed",
+          "#79a3f9",
+          "#acc9ff",
+          "#e3efff"
+        ],
+        "cssVar": "--series-1",
+        "theme": "light"
+      },
+      "series-2": {
+        "role": "chart",
+        "displayName": "Series 2 Orange",
+        "canonical": "#d9730d",
+        "oklch": "oklch(65.9% 0.159 56)",
+        "tonalRamp": [
+          "#130803",
+          "#342011",
+          "#623510",
+          "#934b00",
+          "#c66300",
+          "#dc915a",
+          "#f0bd9a",
+          "#ffe9d8"
+        ],
+        "cssVar": "--series-2",
+        "theme": "light"
+      },
+      "series-3": {
+        "role": "chart",
+        "displayName": "Series 3 Teal",
+        "canonical": "#0f8b7e",
+        "oklch": "oklch(57.3% 0.099 183)",
+        "tonalRamp": [
+          "#050d0c",
+          "#172926",
+          "#1e4b45",
+          "#226f65",
+          "#279588",
+          "#6fb4a9",
+          "#a8d4cc",
+          "#dff4f0"
+        ],
+        "cssVar": "--series-3",
+        "theme": "light"
+      },
+      "series-4": {
+        "role": "chart",
+        "displayName": "Series 4 Violet",
+        "canonical": "#8b3fc4",
+        "oklch": "oklch(53.1% 0.200 307)",
+        "tonalRamp": [
+          "#0e0815",
+          "#2c1e38",
+          "#50316c",
+          "#7844a3",
+          "#a259dc",
+          "#bd8bec",
+          "#d9b9fa",
+          "#f6e7ff"
+        ],
+        "cssVar": "--series-4",
+        "theme": "light"
+      },
+      "series-5": {
+        "role": "chart",
+        "displayName": "Series 5 Rose",
+        "canonical": "#c2305f",
+        "oklch": "oklch(54.8% 0.184 7)",
+        "tonalRamp": [
+          "#150609",
+          "#381b21",
+          "#69293a",
+          "#9f3754",
+          "#d64770",
+          "#ea7f97",
+          "#fbb2c0",
+          "#ffe5ea"
+        ],
+        "cssVar": "--series-5",
+        "theme": "light"
+      },
+      "bg-dark": {
+        "role": "neutral",
+        "displayName": "Cool Ground (dark)",
+        "canonical": "#0e131a",
+        "oklch": "oklch(18.5% 0.016 257)",
+        "tonalRamp": [
+          "#070b12",
+          "#20252d",
+          "#3c424b",
+          "#5b626b",
+          "#7c838c",
+          "#9fa6b0",
+          "#c2cad4",
+          "#e8effa"
+        ],
+        "cssVar": "--bg",
+        "theme": "dark"
+      },
+      "surface-dark": {
+        "role": "neutral",
+        "displayName": "Panel White (dark)",
+        "canonical": "#141a22",
+        "oklch": "oklch(21.5% 0.018 256)",
+        "tonalRamp": [
+          "#060b13",
+          "#1f262e",
+          "#3c434c",
+          "#5b626c",
+          "#7b838d",
+          "#9ea6b1",
+          "#c2cad5",
+          "#e7effb"
+        ],
+        "cssVar": "--surface",
+        "theme": "dark"
+      },
+      "surface-2-dark": {
+        "role": "neutral",
+        "displayName": "Ruled Tint (dark)",
+        "canonical": "#1a222c",
+        "oklch": "oklch(24.9% 0.022 254)",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#232528",
+          "#3e4248",
+          "#5b626b",
+          "#7a8390",
+          "#9ea6af",
+          "#c4cad0",
+          "#eceff2"
+        ],
+        "cssVar": "--surface-2",
+        "theme": "dark"
+      },
+      "border-dark": {
+        "role": "neutral",
+        "displayName": "Hairline (dark)",
+        "canonical": "#252f3c",
+        "oklch": "oklch(30.2% 0.027 255)",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#232528",
+          "#3d4249",
+          "#59626d",
+          "#788393",
+          "#9da6b2",
+          "#c4cad2",
+          "#eceff3"
+        ],
+        "cssVar": "--border",
+        "theme": "dark"
+      },
+      "border-strong-dark": {
+        "role": "neutral",
+        "displayName": "Strong Hairline (dark)",
+        "canonical": "#354253",
+        "oklch": "oklch(37.5% 0.034 255)",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#222529",
+          "#3c434b",
+          "#586270",
+          "#758497",
+          "#9ba6b5",
+          "#c2cad4",
+          "#ebeff4"
+        ],
+        "cssVar": "--border-strong",
+        "theme": "dark"
+      },
+      "text-dark": {
+        "role": "neutral",
+        "displayName": "Ink (dark)",
+        "canonical": "#e6eaf0",
+        "oklch": "oklch(93.6% 0.009 258)",
+        "tonalRamp": [
+          "#090b0f",
+          "#22252a",
+          "#3f4247",
+          "#5e6167",
+          "#7f8388",
+          "#a2a5ab",
+          "#c5c9cf",
+          "#ebeff5"
+        ],
+        "cssVar": "--text",
+        "theme": "dark"
+      },
+      "muted-dark": {
+        "role": "neutral",
+        "displayName": "Slate Muted (dark)",
+        "canonical": "#9aa6b6",
+        "oklch": "oklch(72.1% 0.027 256)",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#232528",
+          "#3d4249",
+          "#5a626d",
+          "#788392",
+          "#9da6b2",
+          "#c4cad2",
+          "#eceff2"
+        ],
+        "cssVar": "--muted",
+        "theme": "dark"
+      },
+      "faint-dark": {
+        "role": "neutral",
+        "displayName": "Slate Faint (dark)",
+        "canonical": "#6f7b8c",
+        "oklch": "oklch(57.9% 0.030 257)",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#232529",
+          "#3d424a",
+          "#59626e",
+          "#778394",
+          "#9da6b3",
+          "#c3cad3",
+          "#eceff3"
+        ],
+        "cssVar": "--faint",
+        "theme": "dark"
+      },
+      "brand-dark": {
+        "role": "primary",
+        "displayName": "Research Blue (dark)",
+        "canonical": "#82a8ff",
+        "oklch": "oklch(74.0% 0.133 265)",
+        "tonalRamp": [
+          "#070b14",
+          "#1d2536",
+          "#304166",
+          "#455f9b",
+          "#5c7fd1",
+          "#88a4e3",
+          "#b5c9f4",
+          "#e5efff"
+        ],
+        "cssVar": "--brand",
+        "theme": "dark"
+      },
+      "brand-soft-dark": {
+        "role": "primary",
+        "displayName": "Research Blue Wash (dark)",
+        "canonical": "#1a2742",
+        "oklch": "oklch(27.6% 0.053 264)",
+        "tonalRamp": [
+          "#090b0f",
+          "#22252c",
+          "#3b4251",
+          "#556179",
+          "#7283a3",
+          "#99a5be",
+          "#c1c9da",
+          "#eaeff7"
+        ],
+        "cssVar": "--brand-soft",
+        "theme": "dark"
+      },
+      "on-brand-dark": {
+        "role": "primary",
+        "displayName": "On-Brand (dark)",
+        "canonical": "#0b1220",
+        "oklch": "oklch(18.3% 0.031 263)",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#232529",
+          "#3e424b",
+          "#5a616f",
+          "#798395",
+          "#9ea5b4",
+          "#c4c9d3",
+          "#eceef3"
+        ],
+        "cssVar": "--on-brand",
+        "theme": "dark"
+      },
+      "pos-dark": {
+        "role": "semantic",
+        "displayName": "Gain Green (dark)",
+        "canonical": "#3fc685",
+        "oklch": "oklch(73.8% 0.150 158)",
+        "tonalRamp": [
+          "#040e08",
+          "#142b1e",
+          "#144e32",
+          "#037447",
+          "#009c5f",
+          "#64ba8b",
+          "#a2d8b8",
+          "#ddf6e6"
+        ],
+        "cssVar": "--pos",
+        "theme": "dark"
+      },
+      "neg-dark": {
+        "role": "semantic",
+        "displayName": "Loss Red (dark)",
+        "canonical": "#ff6b61",
+        "oklch": "oklch(71.0% 0.183 27)",
+        "tonalRamp": [
+          "#150706",
+          "#391c19",
+          "#6b2b26",
+          "#a13934",
+          "#d94a44",
+          "#ed8277",
+          "#fdb4ab",
+          "#ffe6e2"
+        ],
+        "cssVar": "--neg",
+        "theme": "dark"
+      },
+      "warn-dark": {
+        "role": "semantic",
+        "displayName": "Caution Amber (dark)",
+        "canonical": "#e0a243",
+        "oklch": "oklch(75.5% 0.132 75)",
+        "tonalRamp": [
+          "#100a03",
+          "#2f2312",
+          "#573c13",
+          "#82570b",
+          "#af7500",
+          "#c99c5e",
+          "#e2c49c",
+          "#fbecd9"
+        ],
+        "cssVar": "--warn",
+        "theme": "dark"
+      },
+      "shell-dark": {
+        "role": "shell",
+        "displayName": "Navy Bar (dark)",
+        "canonical": "#090d13",
+        "oklch": "oklch(15.8% 0.014 258)",
+        "tonalRamp": [
+          "#080b11",
+          "#21252c",
+          "#3d424a",
+          "#5c626a",
+          "#7d838b",
+          "#a0a5ae",
+          "#c3cad3",
+          "#e9eff8"
+        ],
+        "cssVar": "--shell",
+        "theme": "dark"
+      },
+      "shell-2-dark": {
+        "role": "shell",
+        "displayName": "Navy Raised (dark)",
+        "canonical": "#161d27",
+        "oklch": "oklch(22.9% 0.022 257)",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#232528",
+          "#3e4248",
+          "#5b626b",
+          "#7a8390",
+          "#9fa6af",
+          "#c5c9d0",
+          "#eceff2"
+        ],
+        "cssVar": "--shell-2",
+        "theme": "dark"
+      },
+      "shell-border-dark": {
+        "role": "shell",
+        "displayName": "Navy Rule (dark)",
+        "canonical": "#2a3443",
+        "oklch": "oklch(32.2% 0.030 258)",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#232529",
+          "#3d424a",
+          "#59626f",
+          "#788395",
+          "#9da6b3",
+          "#c4cad3",
+          "#eceff3"
+        ],
+        "cssVar": "--shell-border",
+        "theme": "dark"
+      },
+      "shell-text-dark": {
+        "role": "shell",
+        "displayName": "Bar Text (dark)",
+        "canonical": "#e2e8f0",
+        "oklch": "oklch(92.9% 0.013 256)",
+        "tonalRamp": [
+          "#080b10",
+          "#21252b",
+          "#3e4249",
+          "#5d6268",
+          "#7d838a",
+          "#a0a6ad",
+          "#c4cad1",
+          "#e9eff7"
+        ],
+        "cssVar": "--shell-text",
+        "theme": "dark"
+      },
+      "shell-muted-dark": {
+        "role": "shell",
+        "displayName": "Bar Muted (dark)",
+        "canonical": "#8d9bb0",
+        "oklch": "oklch(68.5% 0.035 258)",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#222529",
+          "#3c424c",
+          "#586271",
+          "#768397",
+          "#9ba6b5",
+          "#c3cad4",
+          "#ebeff4"
+        ],
+        "cssVar": "--shell-muted",
+        "theme": "dark"
+      },
+      "series-1-dark": {
+        "role": "chart",
+        "displayName": "Series 1 Blue (dark)",
+        "canonical": "#82a8ff",
+        "oklch": "oklch(74.0% 0.133 265)",
+        "tonalRamp": [
+          "#070b14",
+          "#1d2536",
+          "#304166",
+          "#455f9b",
+          "#5c7fd1",
+          "#88a4e3",
+          "#b5c9f4",
+          "#e5efff"
+        ],
+        "cssVar": "--series-1",
+        "theme": "dark"
+      },
+      "series-2-dark": {
+        "role": "chart",
+        "displayName": "Series 2 Orange (dark)",
+        "canonical": "#f0a050",
+        "oklch": "oklch(77.0% 0.135 63)",
+        "tonalRamp": [
+          "#110904",
+          "#312113",
+          "#5b3917",
+          "#895215",
+          "#b96e13",
+          "#d19762",
+          "#e8c19e",
+          "#feebda"
+        ],
+        "cssVar": "--series-2",
+        "theme": "dark"
+      },
+      "series-3-dark": {
+        "role": "chart",
+        "displayName": "Series 3 Teal (dark)",
+        "canonical": "#3fd0bb",
+        "oklch": "oklch(77.7% 0.124 181)",
+        "tonalRamp": [
+          "#030e0c",
+          "#122a26",
+          "#0c4d44",
+          "#007264",
+          "#009786",
+          "#5db8a8",
+          "#9fd6cb",
+          "#dcf5ef"
+        ],
+        "cssVar": "--series-3",
+        "theme": "dark"
+      },
+      "series-4-dark": {
+        "role": "chart",
+        "displayName": "Series 4 Violet (dark)",
+        "canonical": "#c58af0",
+        "oklch": "oklch(73.0% 0.155 310)",
+        "tonalRamp": [
+          "#0e0812",
+          "#2b2033",
+          "#4f3561",
+          "#754c93",
+          "#9e65c6",
+          "#ba91da",
+          "#d8bcee",
+          "#f5e9ff"
+        ],
+        "cssVar": "--series-4",
+        "theme": "dark"
+      },
+      "series-5-dark": {
+        "role": "chart",
+        "displayName": "Series 5 Rose (dark)",
+        "canonical": "#ff7aa2",
+        "oklch": "oklch(74.4% 0.166 3)",
+        "tonalRamp": [
+          "#14070a",
+          "#361c23",
+          "#652c3e",
+          "#993d5a",
+          "#ce5079",
+          "#e3839e",
+          "#f6b4c4",
+          "#ffe5ec"
+        ],
+        "cssVar": "--series-5",
+        "theme": "dark"
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The one left-aligned page title; 26px below 640px."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Panel titles in the ruled header strip."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Running text and descriptions."
+      },
+      "table": {
+        "displayName": "Table",
+        "purpose": "Table cells, tabular figures, numbers right-aligned."
+      },
+      "control": {
+        "displayName": "Control",
+        "purpose": "Buttons, panel-head links, breadcrumbs, sort status, mobile nav."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Figure labels, column headers, form labels, badges, segmented options; sentence case, Slate Muted."
+      },
+      "figure": {
+        "displayName": "Figure",
+        "purpose": "Values in an inline figure row."
+      },
+      "figure-lead": {
+        "displayName": "Figure Lead",
+        "purpose": "The latest NAV on a fund page."
+      },
+      "chart-axis": {
+        "displayName": "Chart Axis",
+        "purpose": "Axis and crosshair labels inside Lightweight Charts."
+      },
+      "formula": {
+        "displayName": "Formula",
+        "purpose": "Monospace formula blocks on /learn only."
+      }
+    },
+    "themes": {
+      "light": "default :root",
+      "dark": "@media (prefers-color-scheme: dark) :root, same variable names; keys suffixed -dark in frontmatter",
+      "source": "web/src/app/globals.css"
+    },
+    "shadows": [
+      {
+        "name": "popover",
+        "value": "0 8px 24px rgb(15 23 42 / 0.18)",
+        "purpose": "Search suggestions list under the app bar field."
+      },
+      {
+        "name": "dialog",
+        "value": "0 16px 48px rgb(15 23 42 / 0.3)",
+        "purpose": "Column-picker modal over a dimmed backdrop."
+      },
+      {
+        "name": "pinned-column-rule",
+        "value": "1px 0 0 var(--border)",
+        "purpose": "Right edge of a sticky first table column; a rule, not elevation."
+      }
+    ],
+    "focus": [
+      {
+        "name": "focus-outline",
+        "value": "outline: 2px solid var(--brand); outline-offset: 2px",
+        "purpose": "Global :focus-visible treatment."
+      },
+      {
+        "name": "input-focus",
+        "value": "border-color: var(--brand); box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 25%, transparent)",
+        "purpose": "Text fields."
+      },
+      {
+        "name": "shell-input-focus",
+        "value": "border-color: var(--shell-muted); ring rgb(255 255 255 / 0.15)",
+        "purpose": "Search field inside the navy app bar."
+      }
+    ],
+    "motion": [
+      {
+        "name": "hover-transition",
+        "value": "150ms cubic-bezier(0.4, 0, 0.2, 1)",
+        "purpose": "Tailwind default transition; used on the clickable category panels' border colour."
+      },
+      {
+        "name": "skeleton-pulse",
+        "value": "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+        "purpose": "Loading skeletons only."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px",
+        "note": "Gutter 16px to 24px; page title 26px to 28px; wordmark appears."
+      },
+      {
+        "name": "md",
+        "value": "768px",
+        "note": "Two-column panel grids."
+      },
+      {
+        "name": "lg",
+        "value": "1024px",
+        "note": "Nav moves into the app bar; side rails appear; gutter 32px."
+      },
+      {
+        "name": "xl",
+        "value": "1280px",
+        "note": "Three-column category leaders; four-column category browse."
+      },
+      {
+        "name": "2xl",
+        "value": "1536px",
+        "note": "Fund page main column splits in two; rail widens to 24rem."
+      },
+      {
+        "name": "rail-sticky",
+        "value": "(width >= 64rem) and (height >= 860px)",
+        "note": "Fund page rail becomes sticky at top 7.5rem."
+      },
+      {
+        "name": "page-max",
+        "value": "120rem",
+        "note": "Content width cap."
+      }
+    ],
+    "layout": {
+      "appBarHeight": "56px",
+      "gutter": [
+        "16px",
+        "24px",
+        "32px"
+      ],
+      "mainPaddingY": "24px",
+      "panelGap": "16px",
+      "regionGap": "24px",
+      "rails": {
+        "screenerFilters": "17rem",
+        "learnToc": "15rem",
+        "fundRail": "22rem / 24rem from 1536px"
+      }
+    }
+  },
+  "components": [
+    {
+      "name": "App Bar",
+      "kind": "nav",
+      "refersTo": "app-bar",
+      "description": "Sticky 56px navy bar with mark, nav links and search; navy in both themes.",
+      "html": "<header class=\"ds-appbar\"><a class=\"ds-appbar-mark\" href=\"#\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 22 22\" aria-hidden=\"true\"><circle cx=\"9.5\" cy=\"9.5\" r=\"7.25\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"/><path d=\"M14.8 14.8 20 20\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\"/><path d=\"M5.5 12l2.5-3 2 1.8 3-4.3\" fill=\"none\" stroke=\"#8fb0ff\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>Fund Lens</a><nav class=\"ds-appbar-nav\"><a href=\"#\">Screener</a><a href=\"#\">Categories</a><a href=\"#\">Fund houses</a><a href=\"#\">Compare</a><a href=\"#\">Learn</a></nav><input class=\"ds-appbar-search\" placeholder=\"Search funds, AMCs or indices\"></header>",
+      "css": ".ds-appbar { display: flex; align-items: center; gap: 24px; height: 56px; padding: 0 32px; background: var(--shell, #0f172a); color: var(--shell-text, #e2e8f0); border-bottom: 1px solid var(--shell-border, #334155); font-family: 'Source Sans 3', ui-sans-serif, system-ui, sans-serif; } .ds-appbar-mark { display: flex; align-items: center; gap: 8px; color: #fff; font-size: 17px; font-weight: 700; text-decoration: none; } .ds-appbar-nav { display: flex; align-self: stretch; gap: 20px; font-size: 14px; } .ds-appbar-nav a { display: flex; align-items: center; border-top: 2px solid transparent; border-bottom: 2px solid transparent; color: var(--shell-muted, #9aa8bc); font-weight: 600; text-decoration: none; } .ds-appbar-nav a:hover { color: #fff; border-bottom-color: var(--shell-muted, #9aa8bc); } .ds-appbar-nav a:focus-visible { outline: 2px solid var(--brand, #1f4fbf); outline-offset: 2px; } .ds-appbar-search { margin-left: auto; width: 100%; max-width: 28rem; height: 32px; padding: 0 10px; border: 1px solid var(--shell-border, #334155); border-radius: 4px; background: var(--shell-2, #1e293b); color: var(--shell-text, #e2e8f0); font: inherit; font-size: 14px; outline: none; } .ds-appbar-search::placeholder { color: var(--shell-muted, #9aa8bc); } .ds-appbar-search:focus { border-color: var(--shell-muted, #9aa8bc); box-shadow: 0 0 0 2px rgb(255 255 255 / 0.15); }"
+    },
+    {
+      "name": "Data Panel with Table",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "White ruled panel, 6px radius, no shadow; header strip with title and its link; a flush, dense table with tinted header row.",
+      "html": "<section class=\"ds-panel\"><div class=\"ds-panel-head\"><h3>Flexi Cap Fund</h3><a class=\"ds-link\" href=\"#\">All 42 funds</a></div><table class=\"ds-table\"><thead><tr><th>#</th><th>Scheme</th><th class=\"r\">3Y CAGR</th><th class=\"r\">1Y</th></tr></thead><tbody><tr><td class=\"m\">1</td><td><a class=\"ds-row-link\" href=\"#\">Parag Parikh Flexi Cap</a></td><td class=\"r pos b\">+21.84%</td><td class=\"r neg\">-1.52%</td></tr><tr><td class=\"m\">2</td><td><a class=\"ds-row-link\" href=\"#\">HDFC Flexi Cap</a></td><td class=\"r pos b\">+20.11%</td><td class=\"r pos\">+6.40%</td></tr></tbody></table></section>",
+      "css": ".ds-panel { max-width: 28rem; background: var(--surface, #fff); border: 1px solid var(--border, #dde2e9); border-radius: 6px; overflow: hidden; color: var(--text, #0f172a); font-family: 'Source Sans 3', ui-sans-serif, system-ui, sans-serif; } .ds-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 16px; border-bottom: 1px solid var(--border, #dde2e9); } .ds-panel-head h3 { margin: 0; font-size: 15px; font-weight: 600; line-height: 1.375; } .ds-link { color: var(--brand, #1f4fbf); font-size: 13px; text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--brand, #1f4fbf) 35%, transparent); text-underline-offset: 3px; } .ds-link:hover { text-decoration-color: var(--brand, #1f4fbf); } .ds-table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; } .ds-table th { padding: 8px 12px; background: var(--surface-2, #eff2f6); border-bottom: 1px solid var(--border-strong, #c2c9d4); color: var(--muted, #536074); font-size: 12px; font-weight: 600; text-align: left; white-space: nowrap; } .ds-table td { padding: 7px 12px; border-top: 1px solid var(--border, #dde2e9); white-space: nowrap; } .ds-table tbody tr:first-child td { border-top: 0; } .ds-table tr:hover td { background: var(--surface-2, #eff2f6); } .ds-table .r { text-align: right; } .ds-table .m { color: var(--muted, #536074); } .ds-table .b { font-weight: 600; } .ds-table .pos { color: var(--pos, #08743f); } .ds-table .neg { color: var(--neg, #c4261d); } .ds-row-link { color: var(--text, #0f172a); font-weight: 600; text-decoration: none; text-underline-offset: 3px; } .ds-row-link:hover { color: var(--brand, #1f4fbf); text-decoration: underline; }"
+    },
+    {
+      "name": "Button",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "Default 32px button: white, strong hairline border, 4px radius.",
+      "html": "<button class=\"ds-btn\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"18\" cy=\"18\" r=\"3\"/><circle cx=\"6\" cy=\"6\" r=\"3\"/><path d=\"M13 6h3a2 2 0 0 1 2 2v7\"/><path d=\"M11 18H8a2 2 0 0 1-2-2V9\"/></svg>Compare</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; padding: 0 12px; border: 1px solid var(--border-strong, #c2c9d4); border-radius: 4px; background: var(--surface, #fff); color: var(--text, #0f172a); font-family: 'Source Sans 3', ui-sans-serif, system-ui, sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; } .ds-btn:hover { background: var(--surface-2, #eff2f6); } .ds-btn:focus-visible { outline: 2px solid var(--brand, #1f4fbf); outline-offset: 2px; } .ds-btn:disabled { opacity: 0.5; }"
+    },
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one submitting action per view, in Research Blue.",
+      "html": "<button class=\"ds-btn-primary\">Apply filters</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; padding: 0 12px; border: 1px solid var(--brand, #1f4fbf); border-radius: 4px; background: var(--brand, #1f4fbf); color: var(--on-brand, #fff); font-family: 'Source Sans 3', ui-sans-serif, system-ui, sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; } .ds-btn-primary:hover { filter: brightness(1.1); } .ds-btn-primary:focus-visible { outline: 2px solid var(--brand, #1f4fbf); outline-offset: 2px; } .ds-btn-primary:disabled { opacity: 0.5; }"
+    },
+    {
+      "name": "Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "32px field; focus turns the border blue with a 25% blue ring.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-label\">Monthly amount (₹)</span><input class=\"ds-input\" value=\"10000\"></label>",
+      "css": ".ds-field { display: grid; gap: 4px; max-width: 16rem; font-family: 'Source Sans 3', ui-sans-serif, system-ui, sans-serif; } .ds-label { color: var(--muted, #536074); font-size: 12px; font-weight: 600; } .ds-input { height: 32px; padding: 0 10px; border: 1px solid var(--border-strong, #c2c9d4); border-radius: 4px; background: var(--surface, #fff); color: var(--text, #0f172a); font: inherit; font-size: 14px; outline: none; } .ds-input::placeholder { color: var(--muted, #536074); } .ds-input:focus { border-color: var(--brand, #1f4fbf); box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand, #1f4fbf) 25%, transparent); }"
+    },
+    {
+      "name": "Segmented Control",
+      "kind": "custom",
+      "refersTo": "segmented-option",
+      "description": "Period, window, plan and preset switcher; the selected option inverts to Ink, not blue.",
+      "html": "<div class=\"ds-seg\" role=\"group\"><button>1M</button><button>6M</button><button>1Y</button><button aria-pressed=\"true\">3Y</button><button>5Y</button><button>Max</button></div>",
+      "css": ".ds-seg { display: inline-flex; max-width: 100%; overflow-x: auto; border: 1px solid var(--border-strong, #c2c9d4); border-radius: 4px; background: var(--surface, #fff); font-family: 'Source Sans 3', ui-sans-serif, system-ui, sans-serif; font-size: 12px; } .ds-seg > button { flex-shrink: 0; padding: 4px 10px; border: 0; border-left: 1px solid var(--border, #dde2e9); background: transparent; color: var(--muted, #536074); font: inherit; font-weight: 600; white-space: nowrap; cursor: pointer; } .ds-seg > button:first-child { border-left: 0; } .ds-seg > button:hover { background: var(--surface-2, #eff2f6); color: var(--text, #0f172a); } .ds-seg > button[aria-pressed=\"true\"] { background: var(--text, #0f172a); color: var(--surface, #fff); } .ds-seg > button:focus-visible { outline: 2px solid var(--brand, #1f4fbf); outline-offset: 2px; }"
+    },
+    {
+      "name": "Badges and Quartile",
+      "kind": "chip",
+      "refersTo": "badge",
+      "description": "Outlined, never filled: default, brand, warn tones and a Q1 quartile mark.",
+      "html": "<div class=\"ds-badges\"><span class=\"ds-badge\">Equity</span><span class=\"ds-badge ds-badge-brand\">Direct</span><span class=\"ds-badge ds-badge-warn\">Inactive</span><span class=\"ds-badge ds-q1\">Q1</span><span class=\"ds-badge\">Q3</span></div>",
+      "css": ".ds-badges { display: flex; flex-wrap: wrap; gap: 8px; font-family: 'Source Sans 3', ui-sans-serif, system-ui, sans-serif; } .ds-badge { display: inline-flex; align-items: center; padding: 1px 6px; border: 1px solid var(--border-strong, #c2c9d4); border-radius: 4px; color: var(--muted, #536074); font-size: 12px; font-weight: 600; } .ds-badge-brand { color: var(--brand, #1f4fbf); border-color: color-mix(in srgb, var(--brand, #1f4fbf) 45%, transparent); } .ds-badge-warn { color: var(--warn, #9a5b00); border-color: color-mix(in srgb, var(--warn, #9a5b00) 45%, transparent); } .ds-q1 { color: var(--text, #0f172a); font-weight: 700; }"
+    },
+    {
+      "name": "Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Removable selection or small action, e.g. Clear sort.",
+      "html": "<a class=\"ds-chip\" href=\"#\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" aria-hidden=\"true\"><path d=\"M18 6 6 18M6 6l12 12\"/></svg>Clear sort</a>",
+      "css": ".ds-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border: 1px solid var(--border, #dde2e9); border-radius: 4px; background: var(--surface, #fff); color: var(--text, #0f172a); font-family: 'Source Sans 3', ui-sans-serif, system-ui, sans-serif; font-size: 13px; font-weight: 600; text-decoration: none; } .ds-chip:hover { background: var(--surface-2, #eff2f6); } .ds-chip:focus-visible { outline: 2px solid var(--brand, #1f4fbf); outline-offset: 2px; }"
+    },
+    {
+      "name": "Section Tabs",
+      "kind": "nav",
+      "refersTo": "tab",
+      "description": "Fund page section tabs on the Cool Ground strip with a 2px underline.",
+      "html": "<nav class=\"ds-tabs\"><a href=\"#\">Performance</a><a href=\"#\">Returns</a><a href=\"#\">Calendar</a><a href=\"#\">Risk</a><a href=\"#\">Benchmark</a><a href=\"#\">Rolling</a></nav>",
+      "css": ".ds-tabs { display: flex; gap: 20px; overflow-x: auto; background: var(--bg, #f4f6f9); border-bottom: 1px solid var(--border, #dde2e9); font-family: 'Source Sans 3', ui-sans-serif, system-ui, sans-serif; font-size: 14px; } .ds-tabs a { display: block; flex-shrink: 0; margin-bottom: -1px; padding: 10px 0; border-bottom: 2px solid transparent; color: var(--muted, #536074); font-weight: 600; text-decoration: none; } .ds-tabs a:hover { color: var(--text, #0f172a); border-bottom-color: var(--border-strong, #c2c9d4); } .ds-tabs a:focus-visible { outline: 2px solid var(--brand, #1f4fbf); outline-offset: 2px; }"
+    },
+    {
+      "name": "Figure Row",
+      "kind": "custom",
+      "refersTo": "stat-figure",
+      "description": "Signature: a page's key numbers inline as label over tabular value, no tiles.",
+      "html": "<dl class=\"ds-figures\"><div><dt>1Y return</dt><dd class=\"neg\">-6.68%</dd></div><div><dt>3Y CAGR</dt><dd class=\"pos\">+12.30%</dd></div><div><dt>Volatility 3Y</dt><dd>9.79%</dd></div><div><dt>Sharpe 3Y</dt><dd>0.56</dd></div><div><dt>Percentile</dt><dd><span class=\"ds-pbar\"><span style=\"width:82%\"></span></span><span class=\"ds-pnum\">82/100</span></dd></div></dl>",
+      "css": ".ds-figures { display: flex; flex-wrap: wrap; gap: 12px 32px; margin: 0; color: var(--text, #0f172a); font-family: 'Source Sans 3', ui-sans-serif, system-ui, sans-serif; } .ds-figures dt { color: var(--muted, #536074); font-size: 12px; font-weight: 600; } .ds-figures dd { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 600; line-height: 1.375; font-variant-numeric: tabular-nums; } .ds-figures .pos { color: var(--pos, #08743f); } .ds-figures .neg { color: var(--neg, #c4261d); } .ds-pbar { display: block; width: 96px; height: 6px; overflow: hidden; border-radius: 4px; background: var(--surface-2, #eff2f6); box-shadow: inset 0 0 0 1px var(--border, #dde2e9); } .ds-pbar > span { display: block; height: 100%; background: color-mix(in srgb, var(--text, #0f172a) 70%, transparent); } .ds-pnum { color: var(--muted, #536074); font-size: 12px; font-weight: 400; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Research Terminal, Played Straight",
+    "overview": "Fund Lens is the category standard for fund research executed at full craft: the visual grammar a reader of Koyfin or Value Research Online already knows, with nothing reinvented and nothing left loose. A navy app bar sits over a cool white ground; everything below it is a white data panel ruled with 1px lines, headed by a strip that carries the panel's title and its own controls. Numbers are the product, so type is one family, figures are tabular, tables are dense (13 to 14px) and sortable, and colour is spent only where it carries meaning.\n\nThe system is dense on purpose. Page titles are left-aligned and one line; a page's key numbers run inline as a row of labelled figures rather than boxed tiles; panels tile in a grid at 16 to 24px gaps. Light and dark themes share every variable name and follow the OS. The app bar stays navy in both. The system explicitly refuses the generic SaaS kit (centred hero, ghost-button rows, stat tiles, same-radius cards everywhere, arrow-suffixed links, a stock blue) and must not read as a broker or investing app.\n\nDepth comes from rules and tints, not shadows. Motion is close to absent: a pulse on loading skeletons and colour or border changes on hover.",
+    "keyCharacteristics": [
+      "Navy app bar (mark, nav, search) over a cool grey-white ground, in both themes.",
+      "White panels, 1px rules, 6px radius, no shadow; a ruled header strip holds title and controls.",
+      "Source Sans 3 for everything; tabular figures on every number.",
+      "Dense, sortable tables with a tinted header row and hairline row rules.",
+      "Research blue for links, selection, focus and the primary action only; green and red only for signed numbers."
+    ],
+    "rules": [
+      {
+        "name": "The Signed-Number Rule",
+        "body": "Green and red appear only on signed values (returns, alpha, excess return, drawdowns), and the sign and value are always printed, so colour is never the only carrier. Zero and null take no colour.",
+        "section": "colors"
+      },
+      {
+        "name": "The Pointing Blue Rule",
+        "body": "Research Blue marks things you can follow or act on (links, focus, selection, the primary action) and nothing else. No blue panel fills, no blue headings, no blue decoration.",
+        "section": "colors"
+      },
+      {
+        "name": "The Navy Bar Rule",
+        "body": "The navy shell belongs to the app bar alone, and stays navy in both themes. Page content never uses shell colours.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tabular Figures Rule",
+        "body": "Every number on screen sets in tabular figures (the `.num` treatment), so columns and figure rows line up digit for digit. Numeric table columns are right-aligned; the fund column is left-aligned.",
+        "section": "typography"
+      },
+      {
+        "name": "The One Family Rule",
+        "body": "Source Sans 3 is the only face. Monospace appears only inside formula blocks.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Panel Rule",
+        "body": "A panel never casts a shadow. If something needs to stand out on the page, it gets a rule, a tint or a position, not elevation; shadows are reserved for layers that float over content.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Two Radii Rule",
+        "body": "6px for containers that sit on the page, 4px for anything inside them. No third radius.",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "**Do** put every page's content in Panel White panels with a 1px Hairline border, a 6px radius and a ruled header strip that holds the title and that panel's own controls.",
+      "**Do** set every number in tabular figures and right-align numeric columns.",
+      "**Do** colour a number green or red only when it is signed, and always print its sign.",
+      "**Do** keep Research Blue for links, focus, selection and the one primary action per view.",
+      "**Do** show a page's headline numbers as an inline figure row (12px label over 17px value), not as tiles.",
+      "**Do** read chart colours from the CSS variables so charts follow the theme.",
+      "**Do** define every new colour as a variable with a light and a dark value under the same name."
+    ],
+    "donts": [
+      "**Don't** put a shadow on a panel, card or table; shadows belong only to the popover and the dialog.",
+      "**Don't** use a third radius, pills or fully rounded controls.",
+      "**Don't** centre page titles or build a hero; the title is one left-aligned line with an optional description.",
+      "**Don't** use stat tiles, ghost-button rows, arrow-suffixed links or a stock Tailwind blue.",
+      "**Don't** fill badges or quartile marks; they are outlined.",
+      "**Don't** use green or red for unsigned values, ranks or decoration.",
+      "**Don't** set running text in Slate Faint; it is for null placeholders and decorative icons.",
+      "**Don't** let anything look like a broker or investing app: no buy calls, ratings stars or promotional colour."
+    ]
+  }
+}

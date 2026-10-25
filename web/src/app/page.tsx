@@ -2,8 +2,7 @@ import { cacheLife } from "next/cache";
 import Link from "next/link";
 import { Suspense } from "react";
 import { AtVersion } from "@/components/at-version";
-import { SearchBox } from "@/components/search-box";
-import { Card, CardSkeleton, Pct, SkeletonBlock } from "@/components/ui";
+import { CardSkeleton, Figures, Pct, SkeletonBlock, Stat } from "@/components/ui";
 import { VERSIONED, api } from "@/lib/api/server";
 import type { MetaRow } from "@/lib/api/types";
 import { categories, groupByAssetClass } from "@/lib/catalog";
@@ -21,40 +20,39 @@ const LEADER_CATEGORIES = [
 
 export default function Home() {
   return (
-    <div className="space-y-10">
-      <section className="mx-auto max-w-3xl pt-6 text-center sm:pt-10">
-        <h1 className="text-3xl font-semibold tracking-tight sm:text-5xl">Every Indian mutual fund, measured.</h1>
-        <p className="mx-auto mt-3 max-w-2xl text-muted sm:text-lg">
+    <div className="space-y-8">
+      <section>
+        <h1 className="h-page">Every Indian mutual fund, measured</h1>
+        <p className="mt-1.5 max-w-3xl text-muted">
           Returns, risk, rolling returns, SIP XIRR and peer ranks for every scheme AMFI publishes, recomputed each night from official NAVs.
+          Search for a fund above, or open the{" "}
+          <Link className="link" href="/screener">
+            screener
+          </Link>
+          ,{" "}
+          <Link className="link" href="/compare">
+            compare funds
+          </Link>{" "}
+          or read{" "}
+          <Link className="link" href="/learn">
+            how the metrics work
+          </Link>
+          .
         </p>
-        <div className="mx-auto mt-6 max-w-xl text-left">
-          <SearchBox placeholder="Try “parag flexi”, “nifty 50 index” or a scheme code" />
-        </div>
-        <div className="mt-4 flex flex-wrap justify-center gap-2 text-sm">
-          <Link className="btn" href="/screener">
-            Open the screener
-          </Link>
-          <Link className="btn" href="/compare">
-            Compare funds
-          </Link>
-          <Link className="btn" href="/learn">
-            Learn the metrics
-          </Link>
-        </div>
       </section>
 
-      <Suspense fallback={<SkeletonBlock className="h-20 w-full" />}>
-        <AtVersion>{(v) => <Stats v={v} />}</AtVersion>
+      <Suspense fallback={<SkeletonBlock className="h-11 w-full max-w-3xl" />}>
+        <AtVersion>{(v) => <Facts v={v} />}</AtVersion>
       </Suspense>
 
       <section>
-        <div className="mb-3 flex items-end justify-between">
-          <h2 className="text-xl font-semibold tracking-tight">Category leaders</h2>
-          <span className="text-xs text-muted">Direct plans, ranked by 3-year CAGR</span>
+        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-4">
+          <h2 className="text-lg font-bold">Category leaders</h2>
+          <span className="text-sm text-muted">Direct plans, ranked by 3-year CAGR</span>
         </div>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {LEADER_CATEGORIES.map((c) => (
-            <Suspense key={c} fallback={<CardSkeleton title={c} height="h-48" />}>
+            <Suspense key={c} fallback={<CardSkeleton title={c} height="h-44" />}>
               <AtVersion>{(v) => <Leaders category={c} v={v} />}</AtVersion>
             </Suspense>
           ))}
@@ -65,22 +63,26 @@ export default function Home() {
         <AtVersion>{(v) => <BrowseCategories v={v} />}</AtVersion>
       </Suspense>
 
-      <section className="grid gap-4 md:grid-cols-3">
+      <section className="card grid divide-border md:grid-cols-3 md:divide-x max-md:divide-y">
         {[
-          ["Returns", "Trailing 1 day to 20 years, calendar and financial years, monthly heatmaps, rolling 1–10 year distributions and SIP XIRR for any dates."],
-          ["Risk", "Volatility, downside deviation, drawdowns with recovery times, VaR/CVaR, Ulcer index, skew and kurtosis — daily and Morningstar-comparable monthly bases."],
-          ["Benchmarks", "Alpha, beta, R², tracking error, information ratio and up/down capture against both the category average and an index fund tracking the AMFI benchmark."],
-        ].map(([t, d]) => (
-          <Card key={t} title={t} action={<Link className="link text-xs" href={`/learn#${t === "Benchmarks" ? "benchmarks" : t.toLowerCase()}`}>Learn →</Link>}>
-            <p className="text-sm text-muted">{d}</p>
-          </Card>
+          ["Returns", "returns", "How returns are computed", "Trailing 1 day to 20 years, calendar and financial years, monthly heatmaps, rolling 1–10 year distributions and SIP XIRR for any dates."],
+          ["Risk", "risk", "How risk is measured", "Volatility, downside deviation, drawdowns with recovery times, VaR/CVaR, Ulcer index, skew and kurtosis, on daily and Morningstar-comparable monthly bases."],
+          ["Benchmarks", "benchmarks", "How benchmark statistics work", "Alpha, beta, R², tracking error, information ratio and up/down capture against both the category average and an index fund tracking the AMFI benchmark."],
+        ].map(([t, anchor, more, d]) => (
+          <div key={t} className="p-4">
+            <h2 className="h-section">{t}</h2>
+            <p className="mt-1 text-sm text-muted">{d}</p>
+            <Link className="link mt-2 inline-block text-sm" href={`/learn#${anchor}`}>
+              {more}
+            </Link>
+          </div>
         ))}
       </section>
     </div>
   );
 }
 
-async function Stats({ v }: { v: string }) {
+async function Facts({ v }: { v: string }) {
   "use cache";
   cacheLife(VERSIONED);
   const res = await api<MetaRow>("/v1/meta", undefined, v);
@@ -95,14 +97,13 @@ async function Stats({ v }: { v: string }) {
     ["NAVs as of", date(m.as_of_date)],
   ];
   return (
-    <dl className="card grid grid-cols-2 gap-4 p-4 sm:grid-cols-3 lg:grid-cols-6">
-      {items.map(([k, v]) => (
-        <div key={k}>
-          <dt className="text-xs text-muted">{k}</dt>
-          <dd className="num mt-0.5 text-lg font-semibold">{v}</dd>
-        </div>
+    <Figures>
+      {items.map(([k, val]) => (
+        <Stat key={k} label={k}>
+          {val}
+        </Stat>
       ))}
-    </dl>
+    </Figures>
   );
 }
 
@@ -125,34 +126,46 @@ async function Leaders({ category, v }: { category: string; v: string }) {
   );
   const rows = res?.data ?? [];
   return (
-    <Card
-      title={
-        <Link href={categoryHref(category)} className="hover:text-brand">
-          {category}
+    <section className="card overflow-hidden">
+      <div className="panel-head">
+        <h3 className="h-section">
+          <Link href={categoryHref(category)} className="hover:text-brand hover:underline underline-offset-[3px]">
+            {category}
+          </Link>
+        </h3>
+        <Link href={categoryHref(category)} className="link text-[13px]">
+          All {res?.meta.total ?? ""} funds
         </Link>
-      }
-      action={
-        <Link href={categoryHref(category)} className="link text-xs">
-          All {res?.meta.total ?? ""} →
-        </Link>
-      }
-    >
-      <ol className="space-y-2.5 text-sm">
-        {rows.map((r, i) => (
-          <li key={r.scheme_code} className="grid grid-cols-[1.25rem_1fr_auto] items-baseline gap-2">
-            <span className="num text-xs text-muted">{i + 1}</span>
-            <Link href={fundHref(r.scheme_code, r.scheme_name)} className="truncate hover:text-brand" title={r.scheme_name}>
-              {shortName(r.scheme_name)}
-            </Link>
-            <span className="text-right">
-              <Pct v={r.cagr_3y} className="font-semibold" />
-              <span className="ml-2 text-xs text-muted">1Y </span>
-              <Pct v={r.ret_1y} className="text-xs" />
-            </span>
-          </li>
-        ))}
-      </ol>
-    </Card>
+      </div>
+      <table className="table table-fixed">
+        <thead>
+          <tr>
+            <th className="w-9 max-sm:hidden">#</th>
+            <th>Scheme</th>
+            <th className="r w-[5.5rem]">3Y CAGR</th>
+            <th className="r w-[4.75rem]">1Y</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => (
+            <tr key={r.scheme_code} className="[&:hover>td]:bg-surface-2">
+              <td className="num text-muted max-sm:hidden">{i + 1}</td>
+              <td className="max-sm:whitespace-normal sm:truncate">
+                <Link href={fundHref(r.scheme_code, r.scheme_name)} className="row-link" title={r.scheme_name}>
+                  {shortName(r.scheme_name)}
+                </Link>
+              </td>
+              <td className="r">
+                <Pct v={r.cagr_3y} className="font-semibold" />
+              </td>
+              <td className="r">
+                <Pct v={r.ret_1y} />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
   );
 }
 
@@ -161,26 +174,31 @@ async function BrowseCategories({ v }: { v: string }) {
   cacheLife(VERSIONED);
   const groups = groupByAssetClass((await categories(v)).filter((c) => c.rankable));
   return (
-    <section>
-      <h2 className="mb-3 text-xl font-semibold tracking-tight">Browse by category</h2>
-      <div className="card space-y-4 p-4 sm:p-5">
+    <section className="card">
+      <div className="panel-head">
+        <h2 className="h-section">Browse by category</h2>
+        <Link href="/categories" className="link text-[13px]">
+          All categories, including index funds, ETFs and FoFs
+        </Link>
+      </div>
+      <div className="grid gap-x-8 gap-y-5 p-4 sm:grid-cols-2 xl:grid-cols-4">
         {groups.map(([cls, rows]) => (
-          <div key={cls} className="flex flex-col gap-2 sm:flex-row">
-            <h3 className="w-36 shrink-0 text-sm font-medium text-muted">{cls}</h3>
-            <ul className="flex flex-wrap gap-2">
+          <div key={cls} className="min-w-0">
+            <h3 className="label mb-1.5 border-b border-border pb-1.5">{cls}</h3>
+            <ul className="space-y-1 text-sm">
               {rows.map((c) => (
-                <li key={c.category}>
-                  <Link href={categoryHref(c.category)} className="chip hover:border-brand hover:text-text">
+                <li key={c.category} className="flex items-baseline justify-between gap-3">
+                  <Link href={categoryHref(c.category)} className="truncate hover:text-brand hover:underline underline-offset-[3px]">
                     {c.category}
                   </Link>
+                  <span className="num shrink-0 text-xs text-muted" title="Active schemes">
+                    {c.active_schemes}
+                  </span>
                 </li>
               ))}
             </ul>
           </div>
         ))}
-        <Link href="/categories" className="link inline-block text-sm">
-          All categories, including index funds, ETFs and FoFs →
-        </Link>
       </div>
     </section>
   );

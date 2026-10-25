@@ -48,9 +48,9 @@ export default function LearnPage() {
         <div className="space-y-12">
           {TOPICS.map((t) => (
             <section key={t.id} id={t.id} className="scroll-mt-20">
-              <h2 className="text-xl font-semibold tracking-tight">{t.title}</h2>
+              <h2 className="text-xl font-bold">{t.title}</h2>
               <p className="mt-1 text-sm text-muted">{t.intro}</p>
-              <div className="mt-4 space-y-4">
+              <div className="card mt-4 divide-y divide-border">
                 {t.concepts.map((c) => (
                   <ConceptCard key={c.id} c={c} />
                 ))}
@@ -59,7 +59,7 @@ export default function LearnPage() {
           ))}
 
           <section id="limitations" className="scroll-mt-20">
-            <h2 className="text-xl font-semibold tracking-tight">Limitations</h2>
+            <h2 className="text-xl font-bold">Limitations</h2>
             <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm text-muted">
               {LIMITATIONS.map((l) => (
                 <li key={l}>{l}</li>
@@ -74,9 +74,9 @@ export default function LearnPage() {
 
 function ConceptCard({ c }: { c: Concept }) {
   return (
-    <article id={c.id} className="card scroll-mt-20 p-4 sm:p-5">
+    <article id={c.id} className="scroll-mt-20 px-5 py-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
-        <h3 className="font-semibold">{c.title}</h3>
+        <h3 className="text-base font-semibold">{c.title}</h3>
         {c.better && (
           <span className="chip" title="Which direction is better">
             Better: {c.better.toLowerCase()}
@@ -88,7 +88,7 @@ function ConceptCard({ c }: { c: Concept }) {
           {c.metrics.map((k) => (
             // Each column gets an anchor, so /learn#sharpe_3y lands on this card.
             <li key={k} id={k} className="scroll-mt-24">
-              <span className="inline-flex rounded-md bg-brand-soft px-2 py-0.5 text-xs text-brand" title={k}>
+              <span className="inline-flex rounded border border-brand/40 px-1.5 py-px text-xs font-semibold text-brand" title={k}>
                 {metric(k).label}
               </span>
             </li>
@@ -97,15 +97,15 @@ function ConceptCard({ c }: { c: Concept }) {
       )}
       <dl className="mt-3 space-y-2 text-sm">
         <div>
-          <dt className="text-xs font-semibold uppercase tracking-wide text-muted">What it means</dt>
+          <dt className="label">What it means</dt>
           <dd className="mt-0.5">{c.meaning}</dd>
         </div>
         <div>
-          <dt className="text-xs font-semibold uppercase tracking-wide text-muted">How it&apos;s computed</dt>
+          <dt className="label">How it&apos;s computed</dt>
           <dd className="mt-0.5 text-muted">{c.how}</dd>
         </div>
       </dl>
-      {c.formula && <pre className="mt-3 overflow-x-auto rounded-lg bg-surface-2 px-3 py-2 font-mono text-xs">{c.formula}</pre>}
+      {c.formula && <pre className="mt-3 overflow-x-auto rounded border border-border bg-surface-2 px-3 py-2 font-mono text-xs">{c.formula}</pre>}
       {c.note && <p className="mt-2 text-xs text-muted">{c.note}</p>}
     </article>
   );

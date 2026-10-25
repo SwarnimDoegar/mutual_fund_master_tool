@@ -26,7 +26,7 @@ export async function RollingSection({ code, v }: { code: number; v: string }) {
       subtitle="Returns over every possible holding period of a fixed length since the fund started — a fairer picture than a single start date."
     >
       <RollingChart code={code} periods={periods} initial={packRolling(initialPeriod, series?.data ?? [])} />
-      <div className="-mx-4 mt-6 overflow-x-auto sm:-mx-5">
+      <div className="panel-table mt-6">
         <table className="table">
           <thead>
             <tr>

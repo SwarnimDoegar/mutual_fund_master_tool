@@ -134,7 +134,7 @@ async function CompareBody({ codes, v }: { codes: number[]; v: string }) {
 
       {rows.length >= 2 && (
         <Card title="Side by side" subtitle="Best value in each row is highlighted (by the metric's direction).">
-          <div className="-mx-4 overflow-x-auto sm:-mx-5">
+          <div className="panel-table">
             <table className="table">
               <thead>
                 <tr>
@@ -171,7 +171,7 @@ function Group({ title, keys, rows }: { title: string; keys: string[]; rows: Com
   return (
     <>
       <tr>
-        <td colSpan={rows.length + 1} className="bg-surface-2 !py-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
+        <td colSpan={rows.length + 1} className="bg-surface-2 !py-1.5 label">
           <span className="sticky left-3">
           {title}
           </span>

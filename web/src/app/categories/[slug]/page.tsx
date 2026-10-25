@@ -88,7 +88,7 @@ async function CategoryBody({ c, plan, sort, offset, cols, columns, v }: BodyPro
       </PageTitle>
 
       {!c.rankable && (
-        <p className="rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-muted">
+        <p className="rounded border border-border bg-surface-2 px-3 py-2 text-sm text-muted">
           Funds in this category are not peer-ranked (passive, fund-of-funds or too heterogeneous). Browse them in the{" "}
           <Link className="link" href={`/screener?category=${encodeURIComponent(c.category)}&all=1&plan=Any`}>
             screener
@@ -168,7 +168,7 @@ async function StatsCard({ c, plan, v }: { c: Category; plan: string; v: string 
       {rows.length === 0 ? (
         <Empty>No ranked funds.</Empty>
       ) : (
-        <div className="-mx-4 overflow-x-auto sm:-mx-5">
+        <div className="panel-table">
           <table className="table">
             <thead>
               <tr>
@@ -190,7 +190,7 @@ async function StatsCard({ c, plan, v }: { c: Category; plan: string; v: string 
                     <td className="r"><Value v={r.p75} kind={d.kind} /></td>
                     <td className="max-w-48 truncate">
                       {r.best_scheme_code ? (
-                        <Link className="link text-xs" href={fundHref(r.best_scheme_code, r.best_scheme_name)} title={r.best_scheme_name ?? ""}>
+                        <Link className="text-[13px] text-brand hover:underline underline-offset-[3px]" href={fundHref(r.best_scheme_code, r.best_scheme_name)} title={r.best_scheme_name ?? ""}>
                           {r.best_scheme_name}
                         </Link>
                       ) : (
