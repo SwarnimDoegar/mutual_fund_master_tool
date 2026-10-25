@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
+import { cacheLife } from "next/cache";
 import Link from "next/link";
 import { Suspense } from "react";
-import { GrowthChart, type GrowthData } from "@/components/charts/growth-chart";
+import { GrowthChart } from "@/components/charts/growth-chart";
 import { FundTable, Pagination } from "@/components/fund-table";
 import { Badge, Card, CardSkeleton, Empty, PageTitle, Value } from "@/components/ui";
-import { api, apiOptional, seg } from "@/lib/api/server";
+import { VERSIONED, api, apiOptional, currentVersion, seg } from "@/lib/api/server";
 import { fundRows } from "@/lib/fund-rows";
 import type { Benchmark, Category, CategoryIndexPoint, CategoryStat, NavPoint } from "@/lib/api/types";
-import { alignTo } from "@/lib/series";
+import { growthData } from "@/lib/series";
 import { categoryBySlug } from "@/lib/catalog";
 import { metric } from "@/lib/metrics";
 import { ColumnPicker } from "@/components/column-picker";
@@ -43,6 +44,14 @@ async function CategoryView({ params, searchParams }: { params: Promise<{ slug: 
   const offset = Math.max(0, Number(one(sp.offset)) || 0);
   const cols = one(sp.cols);
   const columns = await resolveColumns(cols);
+  return <CategoryBody c={c} plan={plan} sort={sort} offset={offset} cols={cols} columns={columns} v={await currentVersion()} />;
+}
+
+type BodyProps = { c: Category; plan: string; sort: string; offset: number; cols?: string; columns: string[]; v: string };
+
+async function CategoryBody({ c, plan, sort, offset, cols, columns, v }: BodyProps) {
+  "use cache";
+  cacheLife(VERSIONED);
   const href = (p: { plan?: string; sort?: string; offset?: number }) => {
     const q = new URLSearchParams();
     if (cols) q.set("cols", cols);
@@ -90,39 +99,38 @@ async function CategoryView({ params, searchParams }: { params: Promise<{ slug: 
 
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         <Suspense fallback={<CardSkeleton title="How the category has done" height="h-80" />}>
-          <IndexCard c={c} plan={plan} />
+          <IndexCard c={c} plan={plan} v={v} />
         </Suspense>
         <Suspense fallback={<CardSkeleton title="Distribution" />}>
-          <StatsCard c={c} plan={plan} />
+          <StatsCard c={c} plan={plan} v={v} />
         </Suspense>
       </div>
 
       <Suspense fallback={<CardSkeleton title="Funds" height="h-96" />}>
-        <FundsCard c={c} plan={plan} sort={sort} offset={offset} href={href} columns={columns} />
+        <FundsCard c={c} plan={plan} sort={sort} offset={offset} href={href} columns={columns} v={v} />
       </Suspense>
     </div>
   );
 }
 
-async function IndexCard({ c, plan }: { c: Category; plan: string }) {
+async function IndexCard({ c, plan, v }: { c: Category; plan: string; v: string }) {
   const [idx, bench] = await Promise.all([
-    apiOptional<CategoryIndexPoint[]>(`/v1/categories/${seg(c.category)}/index`, { plan, interval: "day" }),
-    api<Benchmark[]>("/v1/benchmarks"),
+    apiOptional<CategoryIndexPoint[]>(`/v1/categories/${seg(c.category)}/index`, { plan, interval: "day" }, v),
+    api<Benchmark[]>("/v1/benchmarks", undefined, v),
   ]);
   const points = (idx?.data ?? []).map((p) => ({ date: p.date, value: p.level }));
   const proxy = bench?.data.find((b) => b.category === c.category);
   const proxyNav = proxy?.proxy_scheme_code
-    ? await apiOptional<NavPoint[]>(`/v1/schemes/${proxy.proxy_scheme_code}/nav`, { interval: "day", from: points[0]?.date })
+    ? await apiOptional<NavPoint[]>(`/v1/schemes/${proxy.proxy_scheme_code}/nav`, { interval: "day", from: points[0]?.date }, v)
     : null;
   const indexName = proxy?.index_name.replace(/\s*\(via .*\)$/, "");
 
-  const dates = points.map((p) => p.date);
-  const data: GrowthData = { dates, lines: [{ name: `Average ${c.category}`, color: 1, values: alignTo(dates, points) }] };
+  const lines = [{ name: `Average ${c.category}`, color: 1, points }];
   if (indexName && proxyNav?.data.length) {
-    data.lines.push({
+    lines.push({
       name: indexName,
       color: 2,
-      values: alignTo(dates, proxyNav.data.flatMap((p) => (p.nav != null ? [{ date: p.date, value: p.nav }] : []))),
+      points: proxyNav.data.flatMap((p) => (p.nav != null ? [{ date: p.date, value: p.nav }] : [])),
     });
   }
 
@@ -137,15 +145,19 @@ async function IndexCard({ c, plan }: { c: Category; plan: string }) {
         </>
       }
     >
-      {dates.length < 2 ? <Empty>No category average for this category.</Empty> : <GrowthChart data={data} height={300} label={`${c.category} average`} />}
+      {points.length < 2 ? (
+        <Empty>No category average for this category.</Empty>
+      ) : (
+        <GrowthChart data={growthData(lines)} height={300} label={`${c.category} average`} />
+      )}
     </Card>
   );
 }
 
 const STAT_ORDER = ["ret_1y", "cagr_3y", "cagr_5y", "cagr_10y", "volatility_3y", "max_drawdown_3y", "sharpe_3y", "sortino_3y", "alpha_3y_category", "rolling_3y_median", "sip_xirr_5y"];
 
-async function StatsCard({ c, plan }: { c: Category; plan: string }) {
-  const res = await apiOptional<CategoryStat[]>(`/v1/categories/${seg(c.category)}/stats`, { plan });
+async function StatsCard({ c, plan, v }: { c: Category; plan: string; v: string }) {
+  const res = await apiOptional<CategoryStat[]>(`/v1/categories/${seg(c.category)}/stats`, { plan }, v);
   const by = new Map((res?.data ?? []).map((r) => [r.metric, r]));
   const rows = STAT_ORDER.flatMap((k) => (by.has(k) ? [by.get(k)!] : []));
   return (
@@ -203,6 +215,7 @@ async function FundsCard({
   offset,
   href,
   columns,
+  v,
 }: {
   c: Category;
   plan: string;
@@ -210,16 +223,20 @@ async function FundsCard({
   offset: number;
   href: (p: { plan?: string; sort?: string; offset?: number }) => string;
   columns: string[];
+  v: string;
 }) {
-  const { rows, total, error } = await fundRows({
-    category: c.category,
-    plan,
-    peer_only: Boolean(c.rankable),
-    sort,
-    fields: fieldsFor(columns, sort),
-    limit: PAGE_SIZE,
-    offset,
-  });
+  const { rows, total, error } = await fundRows(
+    {
+      category: c.category,
+      plan,
+      peer_only: Boolean(c.rankable),
+      sort,
+      fields: fieldsFor(columns, sort),
+      limit: PAGE_SIZE,
+      offset,
+    },
+    v,
+  );
   return (
     <Card
       title={

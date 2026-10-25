@@ -5,8 +5,8 @@ import { api } from "./api/server";
 import type { Category, FundHouse } from "./api/types";
 import { slugify } from "./slug";
 
-export async function categories(): Promise<Category[]> {
-  return (await api<Category[]>("/v1/categories"))?.data ?? [];
+export async function categories(v?: string): Promise<Category[]> {
+  return (await api<Category[]>("/v1/categories", undefined, v))?.data ?? [];
 }
 
 export async function categoryBySlug(slug: string): Promise<Category> {
@@ -15,8 +15,8 @@ export async function categoryBySlug(slug: string): Promise<Category> {
   return found;
 }
 
-export async function fundHouses(): Promise<FundHouse[]> {
-  return (await api<FundHouse[]>("/v1/fund-houses"))?.data ?? [];
+export async function fundHouses(v?: string): Promise<FundHouse[]> {
+  return (await api<FundHouse[]>("/v1/fund-houses", undefined, v))?.data ?? [];
 }
 
 export async function fundHouseBySlug(slug: string): Promise<FundHouse> {

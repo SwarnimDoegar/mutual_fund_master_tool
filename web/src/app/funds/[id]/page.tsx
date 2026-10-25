@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { cacheLife } from "next/cache";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { CalendarSection } from "@/components/fund/calendar";
@@ -16,7 +17,7 @@ import { RollingSection } from "@/components/fund/rolling";
 import { SipSection } from "@/components/fund/sip";
 import { LumpsumCalculator } from "@/components/fund/calculators";
 import { Card, CardSkeleton, SkeletonBlock } from "@/components/ui";
-import { api, apiOrNotFound } from "@/lib/api/server";
+import { VERSIONED, api, apiOrNotFound, currentVersion } from "@/lib/api/server";
 import type { Scheme } from "@/lib/api/types";
 import { date, pct } from "@/lib/format";
 import { fundHref, parseFundId } from "@/lib/slug";
@@ -60,7 +61,18 @@ const SECTIONS = [
 async function Fund({ params }: { params: Promise<{ id: string }> }) {
   const code = parseFundId((await params).id);
   if (!code) notFound();
-  const { data: s } = await apiOrNotFound<Scheme>(`/v1/schemes/${code}`);
+  const v = await currentVersion();
+  await apiOrNotFound<Scheme>(`/v1/schemes/${code}`, undefined, v);
+  return <FundBody code={code} v={v} />;
+}
+
+/** The whole page for one fund at one data version, rendered once and then served from cache. */
+async function FundBody({ code, v }: { code: number; v: string }) {
+  "use cache";
+  cacheLife(VERSIONED);
+  const res = await api<Scheme>(`/v1/schemes/${code}`, undefined, v);
+  if (!res) return null;
+  const s = res.data;
 
   return (
     <div className="space-y-6">
@@ -83,42 +95,42 @@ async function Fund({ params }: { params: Promise<{ id: string }> }) {
         <div className="grid min-w-0 content-start gap-6 2xl:grid-cols-2">
           <div className="min-w-0 2xl:col-span-2">
             <Suspense fallback={<CardSkeleton title="Performance" height="h-80" />}>
-              <PerformanceSection s={s} />
+              <PerformanceSection s={s} v={v} />
             </Suspense>
           </div>
           <div className="min-w-0">
             <Suspense fallback={<CardSkeleton title="Trailing returns" />}>
-              <ReturnsSection s={s} />
+              <ReturnsSection s={s} v={v} />
             </Suspense>
           </div>
           <div className="min-w-0">
             <Suspense fallback={<CardSkeleton title="Calendar returns" />}>
-              <CalendarSection code={s.scheme_code} />
+              <CalendarSection code={s.scheme_code} v={v} />
             </Suspense>
           </div>
           <div className="min-w-0">
             <Suspense fallback={<CardSkeleton title="Risk and risk-adjusted returns" />}>
-              <RiskSection code={s.scheme_code} />
+              <RiskSection code={s.scheme_code} v={v} />
             </Suspense>
           </div>
           <div className="min-w-0">
             <Suspense fallback={<CardSkeleton title="Against the benchmarks" />}>
-              <RelativeSection s={s} />
+              <RelativeSection s={s} v={v} />
             </Suspense>
           </div>
           <div className="min-w-0">
             <Suspense fallback={<CardSkeleton title="Rolling returns" height="h-80" />}>
-              <RollingSection code={s.scheme_code} />
+              <RollingSection code={s.scheme_code} v={v} />
             </Suspense>
           </div>
           <div className="min-w-0">
             <Suspense fallback={<CardSkeleton title="Drawdowns" height="h-72" />}>
-              <DrawdownSection code={s.scheme_code} />
+              <DrawdownSection code={s.scheme_code} v={v} />
             </Suspense>
           </div>
           <div className="min-w-0 2xl:col-span-2">
             <Suspense fallback={<CardSkeleton title="SIP returns" />}>
-              <SipSection s={s} />
+              <SipSection s={s} v={v} />
             </Suspense>
           </div>
         </div>
@@ -127,18 +139,18 @@ async function Fund({ params }: { params: Promise<{ id: string }> }) {
           <KeyFacts s={s} />
           <PlanLinks s={s} />
           <Suspense fallback={<CardSkeleton title="Peer ranks" height="h-96" />}>
-            <RanksCard s={s} />
+            <RanksCard s={s} v={v} />
           </Suspense>
           <Card title="Lumpsum calculator" subtitle="Value today of a one-time investment">
             <LumpsumCalculator code={s.scheme_code} inception={s.inception_date ?? null} asOf={s.last_nav_date} />
           </Card>
           {s.option !== "Growth" && (
             <Suspense fallback={null}>
-              <PayoutsCard s={s} />
+              <PayoutsCard s={s} v={v} />
             </Suspense>
           )}
           <Suspense fallback={null}>
-            <QualityCard code={s.scheme_code} />
+            <QualityCard code={s.scheme_code} v={v} />
           </Suspense>
           <p className="text-xs text-muted">
             Compare this fund with others in the{" "}

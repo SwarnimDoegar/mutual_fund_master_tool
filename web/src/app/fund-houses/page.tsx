@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
+import { cacheLife } from "next/cache";
 import Link from "next/link";
 import { Suspense } from "react";
+import { AtVersion } from "@/components/at-version";
 import { Card, CardSkeleton, PageTitle, PercentileBar } from "@/components/ui";
+import { VERSIONED } from "@/lib/api/server";
 import { fundHouses } from "@/lib/catalog";
 import { pct } from "@/lib/format";
 import { fundHouseHref } from "@/lib/slug";
@@ -16,14 +19,16 @@ export default function FundHousesPage() {
     <>
       <PageTitle title="Fund houses" subtitle="How each AMC's ranked funds do against other funds in the same category. The bars show its funds' average percentile within their categories (100 = best in every category, 0 = worst)." />
       <Suspense fallback={<CardSkeleton height="h-[40rem]" />}>
-        <HouseTable />
+        <AtVersion>{(v) => <HouseTable v={v} />}</AtVersion>
       </Suspense>
     </>
   );
 }
 
-async function HouseTable() {
-  const rows = (await fundHouses()).sort((a, b) => (b.ranked_funds ?? 0) - (a.ranked_funds ?? 0) || a.fund_house.localeCompare(b.fund_house));
+async function HouseTable({ v }: { v: string }) {
+  "use cache";
+  cacheLife(VERSIONED);
+  const rows = (await fundHouses(v)).sort((a, b) => (b.ranked_funds ?? 0) - (a.ranked_funds ?? 0) || a.fund_house.localeCompare(b.fund_house));
   return (
     <Card>
       <div className="-mx-4 overflow-x-auto sm:-mx-5">

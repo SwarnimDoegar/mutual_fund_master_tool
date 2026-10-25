@@ -1,8 +1,10 @@
+import { cacheLife } from "next/cache";
 import Link from "next/link";
 import { Suspense } from "react";
+import { AtVersion } from "@/components/at-version";
 import { SearchBox } from "@/components/search-box";
 import { Card, CardSkeleton, Pct, SkeletonBlock } from "@/components/ui";
-import { api } from "@/lib/api/server";
+import { VERSIONED, api } from "@/lib/api/server";
 import type { MetaRow } from "@/lib/api/types";
 import { categories, groupByAssetClass } from "@/lib/catalog";
 import { date } from "@/lib/format";
@@ -42,7 +44,7 @@ export default function Home() {
       </section>
 
       <Suspense fallback={<SkeletonBlock className="h-20 w-full" />}>
-        <Stats />
+        <AtVersion>{(v) => <Stats v={v} />}</AtVersion>
       </Suspense>
 
       <section>
@@ -53,14 +55,14 @@ export default function Home() {
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {LEADER_CATEGORIES.map((c) => (
             <Suspense key={c} fallback={<CardSkeleton title={c} height="h-48" />}>
-              <Leaders category={c} />
+              <AtVersion>{(v) => <Leaders category={c} v={v} />}</AtVersion>
             </Suspense>
           ))}
         </div>
       </section>
 
       <Suspense fallback={<CardSkeleton height="h-64" />}>
-        <BrowseCategories />
+        <AtVersion>{(v) => <BrowseCategories v={v} />}</AtVersion>
       </Suspense>
 
       <section className="grid gap-4 md:grid-cols-3">
@@ -78,8 +80,10 @@ export default function Home() {
   );
 }
 
-async function Stats() {
-  const res = await api<MetaRow>("/v1/meta");
+async function Stats({ v }: { v: string }) {
+  "use cache";
+  cacheLife(VERSIONED);
+  const res = await api<MetaRow>("/v1/meta", undefined, v);
   if (!res) return null;
   const m = res.data;
   const items: [string, string][] = [
@@ -104,15 +108,21 @@ async function Stats() {
 
 type LeaderRow = { scheme_code: number; scheme_name: string; fund_house: string; cagr_3y: number | null; ret_1y: number | null; sharpe_3y: number | null };
 
-async function Leaders({ category }: { category: string }) {
-  const res = await api<LeaderRow[]>("/v1/screener", {
-    category,
-    plan: "Direct",
-    peer_only: true,
-    sort: "-cagr_3y",
-    fields: "scheme_name,fund_house,cagr_3y,ret_1y,sharpe_3y",
-    limit: 5,
-  });
+async function Leaders({ category, v }: { category: string; v: string }) {
+  "use cache";
+  cacheLife(VERSIONED);
+  const res = await api<LeaderRow[]>(
+    "/v1/screener",
+    {
+      category,
+      plan: "Direct",
+      peer_only: true,
+      sort: "-cagr_3y",
+      fields: "scheme_name,fund_house,cagr_3y,ret_1y,sharpe_3y",
+      limit: 5,
+    },
+    v,
+  );
   const rows = res?.data ?? [];
   return (
     <Card
@@ -146,8 +156,10 @@ async function Leaders({ category }: { category: string }) {
   );
 }
 
-async function BrowseCategories() {
-  const groups = groupByAssetClass((await categories()).filter((c) => c.rankable));
+async function BrowseCategories({ v }: { v: string }) {
+  "use cache";
+  cacheLife(VERSIONED);
+  const groups = groupByAssetClass((await categories(v)).filter((c) => c.rankable));
   return (
     <section>
       <h2 className="mb-3 text-xl font-semibold tracking-tight">Browse by category</h2>

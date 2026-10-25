@@ -13,8 +13,8 @@ function heat(v: number | null | undefined): React.CSSProperties | undefined {
   return { background: `color-mix(in srgb, var(${v >= 0 ? "--pos" : "--neg"}) ${Math.round(a * 100)}%, transparent)` };
 }
 
-export async function CalendarSection({ code }: { code: number }) {
-  const res = await api<CalendarReturn[]>(`/v1/schemes/${code}/calendar-returns`);
+export async function CalendarSection({ code, v }: { code: number; v: string }) {
+  const res = await api<CalendarReturn[]>(`/v1/schemes/${code}/calendar-returns`, undefined, v);
   const all = res?.data ?? [];
   const yearsRows = all.filter((r) => r.period_type === "year");
   const fy = all.filter((r) => r.period_type === "fy");

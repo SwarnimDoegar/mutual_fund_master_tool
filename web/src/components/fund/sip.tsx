@@ -4,8 +4,8 @@ import { api } from "@/lib/api/server";
 import type { Scheme, SipRow } from "@/lib/api/types";
 import { date, inr, inrCompact, int } from "@/lib/format";
 
-export async function SipSection({ s }: { s: Scheme }) {
-  const res = await api<SipRow[]>(`/v1/schemes/${s.scheme_code}/sip`);
+export async function SipSection({ s, v }: { s: Scheme; v: string }) {
+  const res = await api<SipRow[]>(`/v1/schemes/${s.scheme_code}/sip`, undefined, v);
   const rows = res?.data ?? [];
   return (
     <Card id="sip" title="SIP returns" subtitle="₹10,000 on the first NAV of every month, valued at the latest NAV. XIRR as in Excel.">

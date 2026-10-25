@@ -62,8 +62,8 @@ function RiskTable({ rows }: { rows: RiskRow[] }) {
   );
 }
 
-export async function RiskSection({ code }: { code: number }) {
-  const res = await api<RiskRow[]>(`/v1/schemes/${code}/risk`);
+export async function RiskSection({ code, v }: { code: number; v: string }) {
+  const res = await api<RiskRow[]>(`/v1/schemes/${code}/risk`, undefined, v);
   const daily = (res?.data ?? []).filter((r) => r.basis === "daily");
   const monthly = (res?.data ?? []).filter((r) => r.basis === "monthly");
   return (

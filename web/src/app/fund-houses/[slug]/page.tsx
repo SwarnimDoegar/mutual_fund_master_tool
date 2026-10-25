@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
+import { cacheLife } from "next/cache";
 import Link from "next/link";
 import { Suspense } from "react";
 import { FundTable, Pagination } from "@/components/fund-table";
 import { Card, CardSkeleton, Empty, PageTitle, PercentileBar, Stat } from "@/components/ui";
+import { VERSIONED, currentVersion } from "@/lib/api/server";
+import type { FundHouse } from "@/lib/api/types";
 import { fundHouseBySlug } from "@/lib/catalog";
 import { fundRows } from "@/lib/fund-rows";
 import { date, pct } from "@/lib/format";
@@ -39,6 +42,14 @@ async function House({ params, searchParams }: { params: Promise<{ slug: string 
   const plan = one(sp.plan) === "Regular" ? "Regular" : "Direct";
   const cols = one(sp.cols);
   const columns = await resolveColumns(cols);
+  return <HouseBody h={h} plan={plan} sort={sort} offset={offset} cols={cols} columns={columns} v={await currentVersion()} />;
+}
+
+type BodyProps = { h: FundHouse; plan: string; sort: string; offset: number; cols?: string; columns: string[]; v: string };
+
+async function HouseBody({ h, plan, sort, offset, cols, columns, v }: BodyProps) {
+  "use cache";
+  cacheLife(VERSIONED);
   const href = (p: { sort?: string; offset?: number; plan?: string }) => {
     const q = new URLSearchParams();
     if (cols) q.set("cols", cols);
@@ -48,15 +59,18 @@ async function House({ params, searchParams }: { params: Promise<{ slug: string 
     const qs = q.toString();
     return `${fundHouseHref(h.fund_house)}${qs ? `?${qs}` : ""}`;
   };
-  const { rows, total, error } = await fundRows({
-    fund_house: h.fund_house,
-    plan,
-    peer_only: true,
-    sort,
-    fields: fieldsFor(columns, sort),
-    limit: PAGE_SIZE,
-    offset,
-  });
+  const { rows, total, error } = await fundRows(
+    {
+      fund_house: h.fund_house,
+      plan,
+      peer_only: true,
+      sort,
+      fields: fieldsFor(columns, sort),
+      limit: PAGE_SIZE,
+      offset,
+    },
+    v,
+  );
 
   return (
     <div className="space-y-6">

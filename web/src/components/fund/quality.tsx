@@ -3,8 +3,8 @@ import { api } from "@/lib/api/server";
 import type { Payout, Quality, Scheme } from "@/lib/api/types";
 import { date, int, pct } from "@/lib/format";
 
-export async function QualityCard({ code }: { code: number }) {
-  const res = await api<Quality>(`/v1/schemes/${code}/quality`);
+export async function QualityCard({ code, v }: { code: number; v: string }) {
+  const res = await api<Quality>(`/v1/schemes/${code}/quality`, undefined, v);
   if (!res) return null;
   const q = res.data;
   const rows: [string, string][] = [
@@ -30,8 +30,8 @@ export async function QualityCard({ code }: { code: number }) {
   );
 }
 
-export async function PayoutsCard({ s }: { s: Scheme }) {
-  const res = await api<Payout[]>(`/v1/schemes/${s.scheme_code}/payouts`);
+export async function PayoutsCard({ s, v }: { s: Scheme; v: string }) {
+  const res = await api<Payout[]>(`/v1/schemes/${s.scheme_code}/payouts`, undefined, v);
   const rows = (res?.data ?? []).slice(-12).reverse();
   return (
     <Card title="IDCW payouts" subtitle="Inferred from the gap to the Growth option of the same portfolio.">

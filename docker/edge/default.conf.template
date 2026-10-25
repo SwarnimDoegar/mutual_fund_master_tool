@@ -19,6 +19,31 @@ limit_conn_status 429;
 limit_req_log_level warn;
 limit_conn_log_level warn;
 
+# Compression happens here rather than in Next.js (compress: false): a lower level, in C. Behind
+# proxy_buffering off each streamed chunk is flushed, so Suspense streaming still arrives in parts.
+gzip on;
+gzip_comp_level 4;
+gzip_min_length 1024;
+gzip_proxied any;
+gzip_vary on;
+gzip_types text/plain text/css text/x-component application/json application/javascript application/xml image/svg+xml;
+
+# Pages are the same for every visitor (only the saved-columns cookie changes them, and the zone's
+# cache rule skips requests that carry it), so Cloudflare may keep a page for an hour; the deploy
+# host purges the zone after each data refresh and deploy. Browsers always revalidate.
+# RSC payloads live at ?_rsc=<hash of the router headers>: that URL requested without the RSC
+# header is answered with HTML, which must never be stored there. Anything else keeps Next's own
+# header (no-store).
+map $args $rsc_param {
+    "~(^|&)_rsc(=|&|$)" 1;
+    default 0;
+}
+map "$status:$rsc_param:$http_rsc" $page_cache_control {
+    "200:0:" "public, max-age=0, s-maxage=3600";
+    "200:1:1" "public, max-age=0, s-maxage=3600";
+    default $upstream_http_cache_control;
+}
+
 # Re-resolve the service name, so a recreated web container (new IP) is picked up.
 resolver 127.0.0.11 valid=10s ipv6=off;
 upstream web {
@@ -67,6 +92,8 @@ server {
 
     location / {
         limit_req zone=pages burst=120 nodelay;
+        proxy_hide_header Cache-Control;
+        add_header Cache-Control $page_cache_control always;
         proxy_pass http://web;
     }
 }

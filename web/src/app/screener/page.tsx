@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
+import { cacheLife } from "next/cache";
 import { Suspense } from "react";
 import { ColumnPicker } from "@/components/column-picker";
 import { FundTable, Pagination } from "@/components/fund-table";
 import { ScreenerFilters } from "@/components/screener-filters";
 import { Card, CardSkeleton, Empty, PageTitle } from "@/components/ui";
+import { VERSIONED, currentVersion } from "@/lib/api/server";
 import { categories, fundHouses } from "@/lib/catalog";
 import { resolveColumns } from "@/lib/columns-server";
 import { fundRows } from "@/lib/fund-rows";
-import { PAGE_SIZE, parseScreener, screenerHref, screenerQuery } from "@/lib/screener";
+import { PAGE_SIZE, parseScreener, screenerHref, screenerQuery, type ScreenerState } from "@/lib/screener";
 
 export const metadata: Metadata = {
   title: "Mutual fund screener",
@@ -27,10 +29,14 @@ export default function ScreenerPage({ searchParams }: PageProps<"/screener">) {
 
 async function Screener({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const sp = await searchParams;
-  const state = parseScreener(sp);
-  const [columns, cats, houses] = await Promise.all([resolveColumns(sp.cols), categories(), fundHouses()]);
+  const [columns, v] = await Promise.all([resolveColumns(sp.cols), currentVersion()]);
+  return <ScreenerBody state={parseScreener(sp)} columns={columns} v={v} />;
+}
 
-  const { rows, total, error } = await fundRows(screenerQuery(state, columns));
+async function ScreenerBody({ state, columns, v }: { state: ScreenerState; columns: string[]; v: string }) {
+  "use cache";
+  cacheLife(VERSIONED);
+  const [cats, houses, { rows, total, error }] = await Promise.all([categories(v), fundHouses(v), fundRows(screenerQuery(state, columns), v)]);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[17rem_minmax(0,1fr)]">

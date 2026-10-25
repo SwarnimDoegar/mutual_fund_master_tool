@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import { cacheLife } from "next/cache";
 import Link from "next/link";
 import { Suspense } from "react";
 import { FundTable, Pagination, type FundTableRow } from "@/components/fund-table";
 import { Card, CardSkeleton, Empty, PageTitle } from "@/components/ui";
-import { ApiRequestError, api } from "@/lib/api/server";
+import { ApiRequestError, VERSIONED, api, currentVersion } from "@/lib/api/server";
 import type { SchemeListRow } from "@/lib/api/types";
 
 export const metadata: Metadata = { title: "Find a fund", robots: { index: false, follow: true } };
@@ -22,11 +23,23 @@ export default function FundsPage({ searchParams }: PageProps<"/funds">) {
 
 async function Results({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams;
-  const q = one(sp.q)?.trim() ?? "";
-  const fundHouse = one(sp.fund_house) ?? "";
-  const category = one(sp.category) ?? "";
-  const includeInactive = one(sp.inactive) === "1";
-  const offset = Math.max(0, Number(one(sp.offset)) || 0);
+  return (
+    <ResultsBody
+      q={one(sp.q)?.trim() ?? ""}
+      fundHouse={one(sp.fund_house) ?? ""}
+      category={one(sp.category) ?? ""}
+      includeInactive={one(sp.inactive) === "1"}
+      offset={Math.max(0, Number(one(sp.offset)) || 0)}
+      v={await currentVersion()}
+    />
+  );
+}
+
+type BodyProps = { q: string; fundHouse: string; category: string; includeInactive: boolean; offset: number; v: string };
+
+async function ResultsBody({ q, fundHouse, category, includeInactive, offset, v }: BodyProps) {
+  "use cache";
+  cacheLife(VERSIONED);
   const href = (p: Record<string, string | number | undefined>) => {
     const qs = new URLSearchParams();
     for (const [k, v] of Object.entries({ q, fund_house: fundHouse, category, inactive: includeInactive ? "1" : "", ...p })) if (v) qs.set(k, String(v));
@@ -38,14 +51,18 @@ async function Results({ searchParams }: { searchParams: Promise<SP> }) {
   let error: string | null = null;
   if (q || fundHouse || category) {
     try {
-      const res = await api<SchemeListRow[]>("/v1/schemes", {
-        q: q || undefined,
-        fund_house: fundHouse || undefined,
-        category: category || undefined,
-        active: includeInactive ? undefined : true,
-        limit: LIMIT,
-        offset,
-      });
+      const res = await api<SchemeListRow[]>(
+        "/v1/schemes",
+        {
+          q: q || undefined,
+          fund_house: fundHouse || undefined,
+          category: category || undefined,
+          active: includeInactive ? undefined : true,
+          limit: LIMIT,
+          offset,
+        },
+        v,
+      );
       rows = res?.data ?? [];
       total = res?.meta.total ?? rows.length;
     } catch (e) {

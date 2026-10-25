@@ -121,7 +121,13 @@ one). Charts use TradingView Lightweight Charts; light and dark follow the OS.
 * **Caching.** Server-side API responses are memoised with `use cache` under
   *(data version, path)*, where the data version comes from `/v1/meta` and is re-read at most once
   a minute. A pipeline refresh changes the version, so pages pick up new numbers within a minute
-  without any purge; mf-api's Redis cache sits behind this.
+  without any purge; mf-api's Redis cache sits behind this. Rendered output is cached the same
+  way: each page reads the version at request time and passes it to a `use cache` body (the whole
+  fund page, each list), so a page is rendered once per data version and then replayed. Per-visitor
+  input (the saved-columns cookie, the query string) is resolved outside and passed in as props.
+* **Payload.** Chart series go to the browser packed into strings (`src/lib/packed.ts`: a start
+  date plus day gaps, values rounded to 8 significant digits for prices and 5 for returns), which
+  cut a long-history fund page from ~530 KB to ~400 KB of HTML.
 * **Browser calls** (search-as-you-type, calculators, rolling-window switches) go through the
   same-origin pass-through `/api/v1/*`, which forwards to `MF_API_URL` and keeps mf-api's caching
   headers and problem+json errors.
@@ -149,6 +155,14 @@ bursts of 30, 30 open connections; `/_next/static` is never limited. Over a limi
 `429` with `Retry-After`. Behind a tunnel or reverse proxy, set `MF_TRUSTED_PROXY` to its address
 and `MF_REAL_IP_HEADER` to the header carrying the client address (`CF-Connecting-IP` for
 Cloudflare); otherwise every visitor shares the proxy's limit.
+
+**Compression and CDN caching.** `edge` gzips responses (Next's own compression is off). Pages
+that are the same for everyone get `Cache-Control: public, max-age=0, s-maxage=3600`, so a CDN
+in front may keep them for an hour while browsers revalidate; non-200 answers keep Next's
+`no-store`, and an `?_rsc=` URL fetched without the `RSC` header (which Next answers with HTML) is
+never marked cacheable. The CDN must bypass its cache for requests carrying the `fl_cols`
+(saved columns) cookie and should be purged after every refresh and deploy; the homelab deploy
+does both (a Cloudflare cache rule and a purge on data-version change).
 
 ## Commands
 

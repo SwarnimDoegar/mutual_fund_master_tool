@@ -3,18 +3,19 @@
 import { useMemo, useState } from "react";
 import { monthsBefore } from "@/lib/dates";
 import { date } from "@/lib/format";
+import { unpackDates, unpackValues, type PackedDates, type PackedValues } from "@/lib/packed";
 import { TimeChart, type ChartSeries } from "./time-chart";
 
 export type GrowthLine = {
   name: string;
-  /** Price or index level on each of `dates` (null before the line starts). */
-  values: (number | null)[];
+  /** Price or index level on each of `dates` (empty before the line starts). */
+  values: PackedValues;
   /** Palette index. */
   color: number;
 };
 
 /** Lines on a shared date axis. The first line is the anchor and must have a value on every date. */
-export type GrowthData = { dates: string[]; lines: GrowthLine[] };
+export type GrowthData = { dates: PackedDates; lines: GrowthLine[] };
 
 const RANGES = [
   { key: "1M", months: 1 },
@@ -53,7 +54,11 @@ const yearsBetween = (a: string, b: string) => (Date.parse(b) - Date.parse(a)) /
  * If a comparison line has no data at the start of the chosen period, the chart starts on the
  * first day every visible line has a value (and says so), so all lines cover the same dates.
  */
-export function GrowthChart({ data, height = 320, label }: { data: GrowthData; height?: number; label: string }) {
+export function GrowthChart({ data: packed, height = 320, label }: { data: GrowthData; height?: number; label: string }) {
+  const data = useMemo(
+    () => ({ dates: unpackDates(packed.dates), lines: packed.lines.map((l) => ({ ...l, values: unpackValues(l.values) })) }),
+    [packed],
+  );
   const spanYears = data.dates.length ? yearsBetween(data.dates[0], data.dates.at(-1)!) : 0;
   const available = RANGES.filter((r) => r.months === 0 || r.months / 12 <= spanYears + 0.05);
   const [range, setRange] = useState<RangeKey>(available.some((r) => r.key === "5Y") ? "5Y" : "Max");

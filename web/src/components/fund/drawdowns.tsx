@@ -3,13 +3,14 @@ import { Card, Empty } from "@/components/ui";
 import { api } from "@/lib/api/server";
 import type { Drawdown, DrawdownPoint } from "@/lib/api/types";
 import { date, int, pct } from "@/lib/format";
+import { packPoints } from "@/lib/packed";
 
-export async function DrawdownSection({ code }: { code: number }) {
+export async function DrawdownSection({ code, v }: { code: number; v: string }) {
   const [episodes, series] = await Promise.all([
-    api<Drawdown[]>(`/v1/schemes/${code}/drawdowns`),
-    api<DrawdownPoint[]>(`/v1/schemes/${code}/drawdowns/series`, { interval: "week" }),
+    api<Drawdown[]>(`/v1/schemes/${code}/drawdowns`, undefined, v),
+    api<DrawdownPoint[]>(`/v1/schemes/${code}/drawdowns/series`, { interval: "week" }, v),
   ]);
-  const points = (series?.data ?? []).map((p) => ({ t: p.date, v: p.drawdown }));
+  const points = packPoints((series?.data ?? []).map((p) => ({ date: p.date, value: p.drawdown })), 5);
   const rows = episodes?.data ?? [];
 
   return (
@@ -18,7 +19,7 @@ export async function DrawdownSection({ code }: { code: number }) {
       title="Drawdowns"
       subtitle="How far the NAV had fallen from its highest value up to each date. 0% means it was at a new high; −30% means an investor who bought at the previous peak was down 30%. Weekly lows."
     >
-      {points.length < 2 ? (
+      {(series?.data.length ?? 0) < 2 ? (
         <Empty>Not enough history.</Empty>
       ) : (
         <TimeChart

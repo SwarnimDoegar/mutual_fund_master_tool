@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
+import { cacheLife } from "next/cache";
 import Link from "next/link";
 import { Suspense } from "react";
+import { AtVersion } from "@/components/at-version";
 import { Badge, CardSkeleton, PageTitle } from "@/components/ui";
+import { VERSIONED } from "@/lib/api/server";
 import { categories, groupByAssetClass } from "@/lib/catalog";
 import { categoryHref } from "@/lib/slug";
 
@@ -15,14 +18,16 @@ export default function CategoriesPage() {
     <>
       <PageTitle title="Categories" subtitle="SEBI categories (circular of 26 Feb 2026). Each AMC label is mapped to one canonical category." />
       <Suspense fallback={<CardSkeleton height="h-[40rem]" />}>
-        <CategoryList />
+        <AtVersion>{(v) => <CategoryList v={v} />}</AtVersion>
       </Suspense>
     </>
   );
 }
 
-async function CategoryList() {
-  const groups = groupByAssetClass(await categories());
+async function CategoryList({ v }: { v: string }) {
+  "use cache";
+  cacheLife(VERSIONED);
+  const groups = groupByAssetClass(await categories(v));
   return (
     <div className="space-y-8">
       {groups.map(([cls, rows]) => (

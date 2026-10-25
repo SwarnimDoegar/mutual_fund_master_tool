@@ -1,15 +1,17 @@
 import type { Metadata } from "next";
 import { X } from "lucide-react";
+import { cacheLife } from "next/cache";
 import Link from "next/link";
 import { Suspense } from "react";
 import { ComparePicker } from "@/components/compare-picker";
 import { MAX_COMPARE } from "@/lib/site";
 import { TimeChart } from "@/components/charts/time-chart";
 import { Card, CardSkeleton, Empty, PageTitle, Value } from "@/components/ui";
-import { ApiRequestError, api } from "@/lib/api/server";
+import { ApiRequestError, VERSIONED, api, currentVersion } from "@/lib/api/server";
 import type { CompareGrowth, CompareRow } from "@/lib/api/types";
 import { date } from "@/lib/format";
 import { metric } from "@/lib/metrics";
+import { packPoints } from "@/lib/packed";
 import { fundHref } from "@/lib/slug";
 
 export const metadata: Metadata = {
@@ -44,6 +46,12 @@ function parseCodes(v: string | string[] | undefined): number[] {
 
 async function Compare({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const codes = parseCodes((await searchParams).codes);
+  return <CompareBody codes={codes} v={await currentVersion()} />;
+}
+
+async function CompareBody({ codes, v }: { codes: number[]; v: string }) {
+  "use cache";
+  cacheLife(VERSIONED);
   const without = (c: number) => {
     const rest = codes.filter((x) => x !== c);
     return rest.length ? `/compare?codes=${rest.join(",")}` : "/compare";
@@ -55,8 +63,8 @@ async function Compare({ searchParams }: { searchParams: Promise<Record<string, 
   if (codes.length >= 2) {
     try {
       const [a, b] = await Promise.all([
-        api<CompareRow[]>("/v1/compare", { codes: codes.join(",") }),
-        api<CompareGrowth[]>("/v1/compare/growth", { codes: codes.join(","), interval: "week" }),
+        api<CompareRow[]>("/v1/compare", { codes: codes.join(",") }, v),
+        api<CompareGrowth[]>("/v1/compare/growth", { codes: codes.join(","), interval: "week" }, v),
       ]);
       rows = a?.data ?? [];
       growth = b?.data ?? [];
@@ -65,14 +73,17 @@ async function Compare({ searchParams }: { searchParams: Promise<Record<string, 
       error = e.message;
     }
   } else if (codes.length === 1) {
-    const one = await api<CompareRow>(`/v1/schemes/${codes[0]}`);
+    const one = await api<CompareRow>(`/v1/schemes/${codes[0]}`, undefined, v);
     rows = one ? [one.data] : [];
   }
 
   const series = growth.map((g, i) => ({
     name: g.scheme_name,
     color: i,
-    points: g.series.flatMap((p) => (p.date && p.value != null ? [{ t: p.date, v: p.value * 100 }] : [])),
+    points: packPoints(
+      g.series.flatMap((p) => (p.date && p.value != null ? [{ date: p.date, value: p.value * 100 }] : [])),
+      8,
+    ),
   }));
   const start = growth[0]?.series[0]?.date;
 

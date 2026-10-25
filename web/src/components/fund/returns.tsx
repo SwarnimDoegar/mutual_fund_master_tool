@@ -15,12 +15,12 @@ const HORIZON_METRIC: Record<string, string> = {
   "10Y": "cagr_10y",
 };
 
-export async function ReturnsSection({ s }: { s: Scheme }) {
+export async function ReturnsSection({ s, v }: { s: Scheme; v: string }) {
   const [ret, ranks, stats] = await Promise.all([
-    api<TrailingReturn[]>(`/v1/schemes/${s.scheme_code}/returns`),
-    apiOptional<RankRow[]>(`/v1/schemes/${s.scheme_code}/ranks`),
+    api<TrailingReturn[]>(`/v1/schemes/${s.scheme_code}/returns`, undefined, v),
+    apiOptional<RankRow[]>(`/v1/schemes/${s.scheme_code}/ranks`, undefined, v),
     s.category && s.plan
-      ? apiOptional<CategoryStat[]>(`/v1/categories/${seg(s.category)}/stats`, { plan: s.plan })
+      ? apiOptional<CategoryStat[]>(`/v1/categories/${seg(s.category)}/stats`, { plan: s.plan }, v)
       : null,
   ]);
   const rankBy = new Map((ranks?.data ?? []).map((r) => [r.metric, r]));

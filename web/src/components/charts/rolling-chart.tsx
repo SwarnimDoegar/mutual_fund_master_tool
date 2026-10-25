@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import { fetchApi } from "@/lib/api/browser";
 import type { RollingPoint } from "@/lib/api/types";
+import { unpackRolling, type PackedRolling } from "@/lib/packed";
 import { TimeChart, type ChartSeries } from "./time-chart";
 
 function toSeries(points: RollingPoint[]): ChartSeries[] {
@@ -17,10 +18,10 @@ function toSeries(points: RollingPoint[]): ChartSeries[] {
  * Rolling-return series for 1Y/3Y/5Y/10Y windows; other windows load on demand. The chart keeps
  * showing the current window until the requested one has loaded, so it never unmounts mid-switch.
  */
-export function RollingChart({ code, periods, initial }: { code: number; periods: string[]; initial: { period: string; points: RollingPoint[] } }) {
+export function RollingChart({ code, periods, initial }: { code: number; periods: string[]; initial: PackedRolling }) {
   const [requested, setRequested] = useState(initial.period);
   const [shown, setShown] = useState(initial.period);
-  const [cache, setCache] = useState<Record<string, RollingPoint[]>>({ [initial.period]: initial.points });
+  const [cache, setCache] = useState<Record<string, RollingPoint[]>>(() => ({ [initial.period]: unpackRolling(initial) }));
   const [error, setError] = useState<string | null>(null);
   const latest = useRef(initial.period);
 

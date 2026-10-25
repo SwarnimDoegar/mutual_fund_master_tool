@@ -3,12 +3,14 @@
 import { BaselineSeries, LineSeries, LineStyle, type ISeriesApi, type MouseEventParams, type Time } from "lightweight-charts";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { date } from "@/lib/format";
+import { unpackPoints, type PackedPoints } from "@/lib/packed";
 import { disposedCharts, inrFormatter, numFormatter, pctFormatter, useChart } from "./use-chart";
 
 export type Point = { t: string; v: number };
 export type ChartSeries = {
   name: string;
-  points: Point[];
+  /** Packed when passed from a server component (lib/packed.ts). */
+  points: Point[] | PackedPoints;
   /** Index into the theme's series palette (default: position in the list). */
   color?: number;
   /** Fill between the line and zero (underwater / excess-return charts). */
@@ -24,7 +26,7 @@ const FORMATTERS = { pct: pctFormatter, inr: inrFormatter, num: numFormatter };
  * `points` must be sorted by date (YYYY-MM-DD).
  */
 export function TimeChart({
-  series,
+  series: given,
   format,
   height = 300,
   ariaLabel,
@@ -43,6 +45,10 @@ export function TimeChart({
   /** Legend heading while hovering; `{date}` becomes the hovered date. */
   hoverTitle?: string;
 }) {
+  const series = useMemo(
+    () => given.map((s) => ({ ...s, points: Array.isArray(s.points) ? s.points : unpackPoints(s.points) })),
+    [given],
+  );
   const formatter = FORMATTERS[format];
   const { ref, chart, theme } = useChart({ localization: { priceFormatter: formatter, locale: "en-IN" } });
   const apis = useRef<ISeriesApi<"Line" | "Baseline">[]>([]);
@@ -130,7 +136,7 @@ export function TimeChart({
 }
 
 /** "+782.6% total · 17.7% a year" from the first to the last point. */
-function changeText(s: ChartSeries): string | null {
+function changeText(s: { points: Point[] }): string | null {
   const a = s.points[0];
   const b = s.points.at(-1);
   if (!a || !b || !a.v) return null;

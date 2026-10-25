@@ -5,8 +5,8 @@ import type { RankRow, Scheme } from "@/lib/api/types";
 import { GROUPS, metric } from "@/lib/metrics";
 import { categoryHref } from "@/lib/slug";
 
-export async function RanksCard({ s }: { s: Scheme }) {
-  const res = s.peer_eligible ? await apiOptional<RankRow[]>(`/v1/schemes/${s.scheme_code}/ranks`) : null;
+export async function RanksCard({ s, v }: { s: Scheme; v: string }) {
+  const res = s.peer_eligible ? await apiOptional<RankRow[]>(`/v1/schemes/${s.scheme_code}/ranks`, undefined, v) : null;
   // The latest-ranks form of the endpoint always carries `metric`.
   const rows = (res?.data ?? []).flatMap((r) => (r.metric ? [{ ...r, metric: r.metric }] : []));
   const sorted = rows.sort((a, b) => {

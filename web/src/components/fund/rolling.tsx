@@ -3,9 +3,10 @@ import { Card, Empty, Pct } from "@/components/ui";
 import { api } from "@/lib/api/server";
 import type { RollingPoint, RollingRow } from "@/lib/api/types";
 import { pct } from "@/lib/format";
+import { packRolling } from "@/lib/packed";
 
-export async function RollingSection({ code }: { code: number }) {
-  const dist = await api<RollingRow[]>(`/v1/schemes/${code}/rolling`);
+export async function RollingSection({ code, v }: { code: number; v: string }) {
+  const dist = await api<RollingRow[]>(`/v1/schemes/${code}/rolling`, undefined, v);
   const rows = (dist?.data ?? []).filter((r) => r.n_periods > 0);
   if (!rows.length) {
     return (
@@ -16,7 +17,7 @@ export async function RollingSection({ code }: { code: number }) {
   }
   const periods = rows.map((r) => r.period);
   const initialPeriod = periods.includes("3Y") ? "3Y" : periods[0];
-  const series = await api<RollingPoint[]>(`/v1/schemes/${code}/rolling/${initialPeriod}`, { interval: "week" });
+  const series = await api<RollingPoint[]>(`/v1/schemes/${code}/rolling/${initialPeriod}`, { interval: "week" }, v);
 
   return (
     <Card
@@ -24,7 +25,7 @@ export async function RollingSection({ code }: { code: number }) {
       title="Rolling returns"
       subtitle="Returns over every possible holding period of a fixed length since the fund started — a fairer picture than a single start date."
     >
-      <RollingChart code={code} periods={periods} initial={{ period: initialPeriod, points: series?.data ?? [] }} />
+      <RollingChart code={code} periods={periods} initial={packRolling(initialPeriod, series?.data ?? [])} />
       <div className="-mx-4 mt-6 overflow-x-auto sm:-mx-5">
         <table className="table">
           <thead>

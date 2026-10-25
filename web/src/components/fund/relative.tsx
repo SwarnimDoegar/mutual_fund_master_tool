@@ -26,8 +26,8 @@ const BENCHMARKS = [
   ["index", "Benchmark index"],
 ] as const;
 
-export async function RelativeSection({ s }: { s: Scheme }) {
-  const res = await api<RelativeRow[]>(`/v1/schemes/${s.scheme_code}/relative`, { basis: "daily" });
+export async function RelativeSection({ s, v }: { s: Scheme; v: string }) {
+  const res = await api<RelativeRow[]>(`/v1/schemes/${s.scheme_code}/relative`, { basis: "daily" }, v);
   const rows = res?.data ?? [];
   const groups = BENCHMARKS.map(([b, label]) => ({ b, label, rows: rows.filter((r) => r.benchmark === b) })).filter((g) => g.rows.length);
   const columns = groups.flatMap((g) => g.rows.map((r, i) => ({ g, r, first: i === 0 })));
