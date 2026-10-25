@@ -154,7 +154,9 @@ bursts of 120 (a page view prefetches the pages it links to), the `/api/v1` pass
 bursts of 30, 30 open connections; `/_next/static` is never limited. Over a limit the client gets
 `429` with `Retry-After`. Behind a tunnel or reverse proxy, set `MF_TRUSTED_PROXY` to its address
 and `MF_REAL_IP_HEADER` to the header carrying the client address (`CF-Connecting-IP` for
-Cloudflare); otherwise every visitor shares the proxy's limit.
+Cloudflare); otherwise every visitor shares the proxy's limit. Its `docker/edge/nginx.conf`
+allows 16,384 connections and 65,536 open files per worker (the image's 1,024 ran out around a
+thousand concurrent visitors).
 
 **Compression and CDN caching.** `edge` gzips responses (Next's own compression is off). Pages
 that are the same for everyone get `Cache-Control: public, max-age=0, s-maxage=3600`, so a CDN

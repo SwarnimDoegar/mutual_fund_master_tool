@@ -135,7 +135,13 @@ services:
       MF_REAL_IP_HEADER: ${MF_REAL_IP_HEADER:-X-Forwarded-For}
       NGINX_ENVSUBST_FILTER: "^MF_"
     volumes:
+      - ./docker/edge/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./docker/edge/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+    # nginx.conf asks for 65,536 open files per worker; the container's limit must allow it.
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
     ports:
       # MF_WEB_BIND=0.0.0.0 when a reverse proxy or tunnel on another host fronts the UI
       - "${MF_WEB_BIND:-127.0.0.1}:${MF_WEB_PORT:-13000}:8080"
