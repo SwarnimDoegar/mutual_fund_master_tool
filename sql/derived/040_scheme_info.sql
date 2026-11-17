@@ -9,7 +9,7 @@ CREATE OR REPLACE TABLE scheme_info
     raw_category          LowCardinality(String),
     asset_class           LowCardinality(String),
     category              LowCardinality(String),
-    plan                  LowCardinality(String),   -- Direct | Regular
+    plan                  LowCardinality(String),   -- Direct | Regular | '' (ETFs have no plans)
     option                LowCardinality(String),   -- Growth | IDCW | Bonus
     idcw_frequency        LowCardinality(String),   -- '' unless option = IDCW
     is_legacy_plan        UInt8,                    -- Retail/Institutional/Unclaimed/Segregated classes
@@ -53,7 +53,9 @@ SELECT
     s.scheme_category AS raw_category,
     coalesce(m.asset_class, 'Unclassified') AS asset_class,
     coalesce(m.category, 'Unclassified') AS category,
-    if(match(s.lname, '\\bdirect\\b'), 'Direct', 'Regular') AS plan,
+    -- An ETF (AMFI's category says so) trades on the exchange as one unit class, so it has no
+    -- plan, whatever its name says. Otherwise Direct when the name says so.
+    multiIf(s.scheme_category LIKE '%ETF%', '', match(s.lname, '\\bdirect\\b'), 'Direct', 'Regular') AS plan,
     multiIf(match(s.lname_opt, '\\bbonus\\b'), 'Bonus',
             match(s.lname_opt, 'idcw|dividend|\\bdiv\\b|payout|reinvest|income distribution'), 'IDCW',
             'Growth') AS option,

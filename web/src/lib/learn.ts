@@ -37,8 +37,8 @@ export const TOPICS: Topic[] = [
         id: "plans",
         title: "Direct vs Regular, Growth vs IDCW",
         meaning:
-          "Every scheme comes in a Direct plan (bought straight from the AMC) and a Regular plan (bought through a distributor, who is paid a commission out of the fund). Both own the same portfolio; Regular is a little more expensive. The Growth option reinvests everything; IDCW options pay part of it out.",
-        how: "Plans and options are read from the scheme name. Rankings compare Direct with Direct and Regular with Regular, Growth options only.",
+          "Every scheme comes in a Direct plan (bought straight from the AMC) and a Regular plan (bought through a distributor, who is paid a commission out of the fund). Both own the same portfolio; Regular is a little more expensive. ETFs are the exception: they trade on the stock exchange as a single plan. The Growth option reinvests everything; IDCW options pay part of it out.",
+        how: "Plans and options are read from the scheme name; ETFs get no plan, even when the fund house puts “Direct” or “Regular” in the name. Rankings compare Direct with Direct and Regular with Regular, Growth options only.",
       },
       {
         id: "categories",

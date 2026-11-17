@@ -77,6 +77,9 @@ async fn metrics_match_closed_form_answers() -> Result<()> {
     )
     .await?;
     assert_eq!(parsed, "9004:Direct/Growth/1,9005:Regular/Growth/1,9006:Direct/IDCW/0");
+    // An ETF has no plan even when its name carries one.
+    let etf_plan = text(&db, "SELECT plan FROM scheme_info WHERE scheme_code = 9042").await?;
+    assert_eq!(etf_plan, "");
 
     // Siblings.
     let sib = text(

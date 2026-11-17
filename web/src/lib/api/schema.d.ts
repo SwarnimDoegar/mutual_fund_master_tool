@@ -989,6 +989,7 @@ export interface components {
             asset_class: string;
             category: string;
             rankable: number;
+            exchange_traded: number;
             active_schemes: number;
             ranked_direct: number;
             ranked_regular: number;

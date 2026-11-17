@@ -29,6 +29,9 @@ SELECT
     i.asset_class AS asset_class,
     i.category AS category,
     toUInt8(any(i.rankable_category)) AS rankable,
+    -- Every scheme is an ETF (AMFI's own label says so). An ETF is one listed unit class with no
+    -- Direct/Regular pair; the plan word some AMCs put in its name is only a label.
+    toUInt8(min(i.raw_category LIKE '%ETF%')) AS exchange_traded,
     toUInt64(countIf(i.is_active)) AS active_schemes,
     toUInt64(countIf(i.peer_eligible AND i.plan = 'Direct')) AS ranked_direct,
     toUInt64(countIf(i.peer_eligible AND i.plan = 'Regular')) AS ranked_regular,

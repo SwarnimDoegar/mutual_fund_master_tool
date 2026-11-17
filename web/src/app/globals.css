@@ -29,6 +29,8 @@
   --series-3: #0f8b7e;
   --series-4: #8b3fc4;
   --series-5: #c2305f;
+  /* Select chevron in --muted (a data URI cannot read currentColor). */
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%23536074' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   color-scheme: light;
 }
 
@@ -58,6 +60,7 @@
     --series-3: #3fd0bb;
     --series-4: #c58af0;
     --series-5: #ff7aa2;
+    --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%239aa6b6' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
     color-scheme: dark;
   }
 }
@@ -183,6 +186,13 @@ body {
   }
   .input {
     @apply h-8 w-full rounded border border-border-strong bg-surface px-2.5 text-sm text-text outline-none placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand/25;
+  }
+  /* Our own chevron, inset like the text: the native arrow sits against the border. */
+  select.input {
+    @apply appearance-none bg-no-repeat pr-7;
+    background-image: var(--chevron);
+    background-position: right 0.5rem center;
+    background-size: 0.75rem;
   }
   .label {
     @apply text-xs font-semibold text-muted;

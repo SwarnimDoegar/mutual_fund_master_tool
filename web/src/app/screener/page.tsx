@@ -33,10 +33,14 @@ async function Screener({ searchParams }: { searchParams: Promise<Record<string,
   return <ScreenerBody state={parseScreener(sp)} columns={columns} v={v} />;
 }
 
-async function ScreenerBody({ state, columns, v }: { state: ScreenerState; columns: string[]; v: string }) {
+async function ScreenerBody({ state: requested, columns, v }: { state: ScreenerState; columns: string[]; v: string }) {
   "use cache";
   cacheLife(VERSIONED);
-  const [cats, houses, { rows, total, error }] = await Promise.all([categories(v), fundHouses(v), fundRows(screenerQuery(state, columns), v)]);
+  const cats = await categories(v);
+  // ETFs have no Direct/Regular pair, so a plan filter would only hide some of them.
+  const etf = cats.some((c) => c.category === requested.filters.category && c.exchange_traded);
+  const state = etf ? { ...requested, filters: { ...requested.filters, plan: undefined } } : requested;
+  const [houses, { rows, total, error }] = await Promise.all([fundHouses(v), fundRows(screenerQuery(state, columns), v)]);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[17rem_minmax(0,1fr)]">
@@ -44,7 +48,7 @@ async function ScreenerBody({ state, columns, v }: { state: ScreenerState; colum
         <ScreenerFilters
           key={screenerHref({ ...state, cols: null, sort: "-cagr_3y", offset: 0 })}
           state={state}
-          categories={cats.map((c) => ({ category: c.category, asset_class: c.asset_class }))}
+          categories={cats.map((c) => ({ category: c.category, asset_class: c.asset_class, exchange_traded: Boolean(c.exchange_traded) }))}
           fundHouses={houses.map((h) => h.fund_house).sort((a, b) => a.localeCompare(b))}
         />
       </aside>

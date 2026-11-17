@@ -31,7 +31,7 @@ export async function ReturnsSection({ s, v }: { s: Scheme; v: string }) {
     <Card
       id="returns"
       title="Trailing returns"
-      subtitle={`Absolute up to 1 year, CAGR beyond. Category figures: ${s.category || "—"}, ${s.plan || "all"} plans, Growth options.`}
+      subtitle={`Absolute up to 1 year, CAGR beyond.${statBy.size ? ` Category figures: ${s.category}, ${s.plan} plans, Growth options.` : ""}`}
     >
       {rows.length === 0 ? (
         <Empty>No return history yet.</Empty>

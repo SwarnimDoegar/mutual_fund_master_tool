@@ -110,6 +110,11 @@ async fn api_serves_correct_metrics() -> Result<()> {
     assert_eq!(meta.json["data"]["schemes"], 10);
     assert_eq!(meta.json["meta"]["as_of_date"], "2026-09-30");
 
+    // Categories say whether they hold ETFs (one listed plan, so pages do not split them).
+    let cats = get(&app, "/v1/categories").await;
+    let large_cap = cats.json["data"].as_array().unwrap().iter().find(|c| c["category"] == "Large Cap Fund").unwrap();
+    assert_eq!(large_cap["exchange_traded"], 0);
+
     // Search: every word must match; Direct Growth first.
     let s = get(&app, "/v1/schemes?q=steady%20large").await;
     let names: Vec<&str> = s.json["data"].as_array().unwrap().iter().map(|r| r["scheme_name"].as_str().unwrap()).collect();

@@ -39,7 +39,8 @@ const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 async function CategoryView({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<SP> }) {
   const c = await categoryBySlug((await params).slug);
   const sp = await searchParams;
-  const plan = one(sp.plan) === "Regular" ? "Regular" : "Direct";
+  // An ETF is one listed unit class (no Direct/Regular pair), so ETF categories are not split.
+  const plan = c.exchange_traded ? null : one(sp.plan) === "Regular" ? "Regular" : "Direct";
   const sort = one(sp.sort) ?? "-cagr_3y";
   const offset = Math.max(0, Number(one(sp.offset)) || 0);
   const cols = one(sp.cols);
@@ -47,7 +48,7 @@ async function CategoryView({ params, searchParams }: { params: Promise<{ slug: 
   return <CategoryBody c={c} plan={plan} sort={sort} offset={offset} cols={cols} columns={columns} v={await currentVersion()} />;
 }
 
-type BodyProps = { c: Category; plan: string; sort: string; offset: number; cols?: string; columns: string[]; v: string };
+type BodyProps = { c: Category; plan: string | null; sort: string; offset: number; cols?: string; columns: string[]; v: string };
 
 async function CategoryBody({ c, plan, sort, offset, cols, columns, v }: BodyProps) {
   "use cache";
@@ -57,7 +58,7 @@ async function CategoryBody({ c, plan, sort, offset, cols, columns, v }: BodyPro
     if (cols) q.set("cols", cols);
     const pl = p.plan ?? plan;
     const so = p.sort ?? sort;
-    if (pl !== "Direct") q.set("plan", pl);
+    if (pl && pl !== "Direct") q.set("plan", pl);
     if (so !== "-cagr_3y") q.set("sort", so);
     if (p.offset) q.set("offset", String(p.offset));
     const qs = q.toString();
@@ -78,18 +79,24 @@ async function CategoryBody({ c, plan, sort, offset, cols, columns, v }: BodyPro
           </>
         }
       >
-        <nav className="seg" aria-label="Plan">
-          {["Direct", "Regular"].map((p) => (
-            <Link key={p} href={href({ plan: p, offset: 0 })} aria-current={plan === p ? "page" : undefined}>
-              {p}
-            </Link>
-          ))}
-        </nav>
+        {plan && (
+          <nav className="seg" aria-label="Plan">
+            {["Direct", "Regular"].map((p) => (
+              <Link key={p} href={href({ plan: p, offset: 0 })} aria-current={plan === p ? "page" : undefined}>
+                {p}
+              </Link>
+            ))}
+          </nav>
+        )}
       </PageTitle>
 
       {!c.rankable && (
         <p className="rounded border border-border bg-surface-2 px-3 py-2 text-sm text-muted">
-          Funds in this category are not peer-ranked (passive, fund-of-funds or too heterogeneous). Browse them in the{" "}
+          Funds in this category are not peer-ranked (passive, fund-of-funds or too heterogeneous), so there is no category average.
+          {c.exchange_traded
+            ? " ETFs trade on the stock exchange as a single plan, so all of them are listed together (some fund houses still put “Direct” or “Regular” in the name)."
+            : null}{" "}
+          Browse them in the{" "}
           <Link className="link" href={`/screener?category=${encodeURIComponent(c.category)}&all=1&plan=Any`}>
             screener
           </Link>
@@ -97,14 +104,17 @@ async function CategoryBody({ c, plan, sort, offset, cols, columns, v }: BodyPro
         </p>
       )}
 
-      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
-        <Suspense fallback={<CardSkeleton title="How the category has done" height="h-80" />}>
-          <IndexCard c={c} plan={plan} v={v} />
-        </Suspense>
-        <Suspense fallback={<CardSkeleton title="Distribution" />}>
-          <StatsCard c={c} plan={plan} v={v} />
-        </Suspense>
-      </div>
+      {/* The category average and spread cover peer-ranked funds only. */}
+      {c.rankable && plan ? (
+        <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+          <Suspense fallback={<CardSkeleton title="How the category has done" height="h-80" />}>
+            <IndexCard c={c} plan={plan} v={v} />
+          </Suspense>
+          <Suspense fallback={<CardSkeleton title="Distribution" />}>
+            <StatsCard c={c} plan={plan} v={v} />
+          </Suspense>
+        </div>
+      ) : null}
 
       <Suspense fallback={<CardSkeleton title="Funds" height="h-96" />}>
         <FundsCard c={c} plan={plan} sort={sort} offset={offset} href={href} columns={columns} v={v} />
@@ -218,7 +228,7 @@ async function FundsCard({
   v,
 }: {
   c: Category;
-  plan: string;
+  plan: string | null;
   sort: string;
   offset: number;
   href: (p: { plan?: string; sort?: string; offset?: number }) => string;

@@ -173,6 +173,7 @@ pub const FRIDAY_END: u32 = 9014; // last NAV on Fri 2026-09-25, market as-of 20
 pub const CATCHUP: [u32; 5] = [9021, 9022, 9023, 9024, 9025]; // Mid Cap: 100 -> 110 -> 121; the last skips the middle day
 pub const THIN_DAY: [u32; 10] = [9031, 9032, 9033, 9034, 9035, 9036, 9037, 9038, 9039, 9040]; // Small Cap: only 3 of 10 publish one day
 pub const STALE_PROXY: u32 = 9041; // Mid Cap benchmark proxy with a 3-week gap; stops publishing on 2026-06-30
+pub const ETF: u32 = 9042; // a gold ETF whose name says "Direct Plan": ETFs have no plan
 
 pub fn catchup_days() -> [NaiveDate; 3] {
     [d("2025-08-04"), d("2025-08-05"), d("2025-08-06")]
@@ -190,6 +191,7 @@ pub fn edge_case_navs() -> Vec<NavRow> {
     let [t0, t1, _] = thin_days();
     for day in business_days() {
         push(SKEW, day, if day >= d("2026-09-01") { 11.2 } else { 10.0 });
+        push(ETF, day, calendar_growth(50.0, 0.09, day));
         // month-end NAVs fall 1% a month from October 2025 on
         let months = (day.year() - 2025) * 12 + day.month() as i32 - 9;
         push(DECLINE, day, 10.0 * 0.99f64.powi(months.max(0)));
@@ -231,7 +233,8 @@ pub fn edge_case_navs() -> Vec<NavRow> {
 pub async fn seed_edge_cases(db: &Db) -> Result<()> {
     db.exec(
         "INSERT INTO category_map VALUES ('Equity Scheme - Mid Cap Fund', 'Equity', 'Mid Cap Fund', 1),
-         ('Equity Scheme - Small Cap Fund', 'Equity', 'Small Cap Fund', 1)",
+         ('Equity Scheme - Small Cap Fund', 'Equity', 'Small Cap Fund', 1),
+         ('Exchange Traded Funds (ETFs) - Gold ETF', 'Other', 'Gold ETF', 0)",
     )
     .await?;
     db.exec("INSERT INTO benchmark_proxy VALUES ('Mid Cap Fund', 9041, 'Test Midcap 150')").await?;
@@ -242,6 +245,7 @@ pub async fn seed_edge_cases(db: &Db) -> Result<()> {
         scheme(WEEKEND_FLAT, "Test Weekend Large Cap Fund - Regular Plan - Growth", "Equity Scheme - Large Cap Fund"),
         scheme(FRIDAY_END, "Test Friday Index Fund - Direct Plan - Growth", idx),
         scheme(STALE_PROXY, "Test Midcap 150 Index Fund - Direct Plan - Growth", idx),
+        scheme(ETF, "Test Gold ETF - Direct Plan", "Exchange Traded Funds (ETFs) - Gold ETF"),
     ];
     let words = ["Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot", "Golf", "Hotel", "India", "Juliet"];
     for (i, code) in CATCHUP.iter().enumerate() {

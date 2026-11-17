@@ -14,7 +14,7 @@ export function ScreenerFilters({
   fundHouses,
 }: {
   state: ScreenerState;
-  categories: { category: string; asset_class: string }[];
+  categories: { category: string; asset_class: string; exchange_traded: boolean }[];
   fundHouses: string[];
 }) {
   const router = useRouter();
@@ -30,6 +30,7 @@ export function ScreenerFilters({
 
   const classes = [...new Set(categories.map((c) => c.asset_class))];
   const visibleCats = categories.filter((c) => !assetClass || c.asset_class === assetClass);
+  const etf = categories.some((c) => c.category === category && c.exchange_traded);
 
   function apply(e?: React.FormEvent) {
     e?.preventDefault();
@@ -41,7 +42,7 @@ export function ScreenerFilters({
         ...(assetClass && { asset_class: assetClass }),
         ...(category && { category }),
         ...(house && { fund_house: house }),
-        ...(plan !== "Any" && { plan }),
+        ...(plan !== "Any" && !etf && { plan }),
       },
       ranges: Object.fromEntries(
         ranges
@@ -99,13 +100,17 @@ export function ScreenerFilters({
         </label>
         <fieldset className="space-y-1">
           <legend className="label">Plan</legend>
-          <div className="seg w-full">
-            {["Direct", "Regular", "Any"].map((p) => (
-              <button key={p} type="button" className="flex-1" aria-pressed={plan === p} onClick={() => setPlan(p)}>
-                {p}
-              </button>
-            ))}
-          </div>
+          {etf ? (
+            <p className="text-xs text-muted">ETFs trade as a single plan, so all of them are shown.</p>
+          ) : (
+            <div className="seg w-full">
+              {["Direct", "Regular", "Any"].map((p) => (
+                <button key={p} type="button" className="flex-1" aria-pressed={plan === p} onClick={() => setPlan(p)}>
+                  {p}
+                </button>
+              ))}
+            </div>
+          )}
         </fieldset>
 
         <fieldset className="space-y-2">

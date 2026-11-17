@@ -151,7 +151,7 @@ async function CompareBody({ codes, v }: { codes: number[]; v: string }) {
                   <td className="sticky left-0 z-10 bg-surface text-muted">Category</td>
                   {rows.map((r) => (
                     <td key={r.scheme_code} className="r whitespace-normal text-xs">
-                      {r.category} · {r.plan}
+                      {[r.category, r.plan].filter(Boolean).join(" · ")}
                     </td>
                   ))}
                 </tr>
