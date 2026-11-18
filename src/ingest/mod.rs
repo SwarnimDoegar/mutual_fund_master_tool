@@ -1,6 +1,8 @@
 //! NAV ingestion.
 //!
 //! 1. Pull `/mf/latest` (one request) and upsert every scheme's metadata and newest NAV.
+//!    Pull AMFI's scheme master for the full name of every plan (see `amfi`); if AMFI is down,
+//!    the names from the last successful pull stay in use.
 //! 2. Fetch full history for schemes we have never fetched successfully (first run = backfill).
 //! 3. Re-fetch a date range for schemes whose newest stored NAV is more than one trading day
 //!    behind the snapshot (see `util::has_weekday_between`).
@@ -8,6 +10,7 @@
 //! `nav` is a ReplacingMergeTree keyed on (scheme_code, date), so re-ingesting is idempotent and
 //! a corrected NAV for an existing date replaces the old value.
 
+pub mod amfi;
 pub mod mfapi;
 pub mod parse;
 
@@ -41,6 +44,7 @@ pub struct IngestStats {
     pub schemes_in_snapshot: usize,
     pub snapshot_navs: usize,
     pub snapshot_invalid_navs: usize,
+    pub scheme_master_rows: usize,
     pub history_full_fetches: usize,
     pub history_range_fetches: usize,
     pub history_rows: usize,
@@ -95,6 +99,15 @@ pub async fn run(
         .collect();
 
     write_snapshot(db, &latest, &mut stats).await?;
+    if !settings.amfi_scheme_master_url.is_empty() {
+        match amfi::sync(db, &settings.amfi_scheme_master_url, &args.codes).await {
+            Ok(n) => {
+                stats.scheme_master_rows = n;
+                info!(rows = n, "AMFI scheme master written");
+            }
+            Err(e) => warn!(error = %format!("{e:#}"), "AMFI scheme master unavailable; keeping the last copy"),
+        }
+    }
 
     if !args.snapshot_only {
         let plans = plan_fetches(&latest, &stored, &fetched, args.full);

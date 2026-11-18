@@ -43,7 +43,7 @@ async function CategoryList({ v }: { v: string }) {
                   </div>
                   <div className="mt-2 text-xs text-muted">
                     {c.active_schemes.toLocaleString("en-IN")} active schemes
-                    {c.rankable ? ` · ${c.ranked_direct} ranked Direct, ${c.ranked_regular} Regular` : ""}
+                    {!c.rankable ? "" : c.exchange_traded ? ` · ${c.ranked} ranked` : ` · ${c.ranked_direct} ranked Direct, ${c.ranked_regular} Regular`}
                   </div>
                   {c.benchmark_index && <div className="mt-1 truncate text-xs text-muted">Benchmark: {c.benchmark_index.replace(/\s*\(via .*\)$/, "")}</div>}
                 </Link>

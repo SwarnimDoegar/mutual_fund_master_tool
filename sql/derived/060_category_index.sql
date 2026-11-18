@@ -1,6 +1,7 @@
--- Equal-weighted category index per (category, plan), base 100. Members are the open-ended,
--- rankable, non-legacy Growth funds of the category; funds that later closed stay in for the
--- days they existed (no survivorship bias). Category membership uses each fund's current category.
+-- Equal-weighted category index per (category, plan), base 100. Members are the category's peer
+-- group (scheme_info.peer_member: Growth options of current plans; ETFs form one plan, ''); funds
+-- that later closed stay in for the days they existed (no survivorship bias). Category membership
+-- uses each fund's current category.
 --
 -- 1. Index dates: days on which at least 3 members published a NAV and at least half as many as
 --    on the month's busiest day (some AMCs publish stray weekend NAVs; three funds must not stand
@@ -52,8 +53,7 @@ FROM
                            count() OVER (PARTITION BY i.category, i.plan, n.date) AS n
                     FROM nav_clean AS n
                     INNER JOIN scheme_info AS i ON i.scheme_code = n.scheme_code
-                    WHERE i.option = 'Growth' AND i.rankable_category AND NOT i.is_legacy_plan
-                      AND i.scheme_type = 'Open Ended Schemes'
+                    WHERE i.peer_member
                 )
             )
             WHERE n >= 3 AND n >= month_max / 2

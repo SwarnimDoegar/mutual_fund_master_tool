@@ -19,9 +19,8 @@ export async function ReturnsSection({ s, v }: { s: Scheme; v: string }) {
   const [ret, ranks, stats] = await Promise.all([
     api<TrailingReturn[]>(`/v1/schemes/${s.scheme_code}/returns`, undefined, v),
     apiOptional<RankRow[]>(`/v1/schemes/${s.scheme_code}/ranks`, undefined, v),
-    s.category && s.plan
-      ? apiOptional<CategoryStat[]>(`/v1/categories/${seg(s.category)}/stats`, { plan: s.plan }, v)
-      : null,
+    // ETFs have no plan (''); their category's figures are all one plan, so no filter is needed.
+    s.category ? apiOptional<CategoryStat[]>(`/v1/categories/${seg(s.category)}/stats`, { plan: s.plan || undefined }, v) : null,
   ]);
   const rankBy = new Map((ranks?.data ?? []).map((r) => [r.metric, r]));
   const statBy = new Map((stats?.data ?? []).map((r) => [r.metric, r]));
@@ -31,7 +30,7 @@ export async function ReturnsSection({ s, v }: { s: Scheme; v: string }) {
     <Card
       id="returns"
       title="Trailing returns"
-      subtitle={`Absolute up to 1 year, CAGR beyond.${statBy.size ? ` Category figures: ${s.category}, ${s.plan} plans, Growth options.` : ""}`}
+      subtitle={`Absolute up to 1 year, CAGR beyond.${statBy.size ? ` Category figures: ${[s.category, s.plan && `${s.plan} plans`, "Growth options"].filter(Boolean).join(", ")}.` : ""}`}
     >
       {rows.length === 0 ? (
         <Empty>No return history yet.</Empty>

@@ -162,7 +162,7 @@ export function ScreenerFilters({
 
         <label className="flex items-start gap-2 text-xs text-muted">
           <input type="checkbox" className="mt-0.5 accent-[var(--brand)]" checked={all} onChange={(e) => setAll(e.target.checked)} />
-          Include IDCW options, index funds, ETFs, FoFs and closed-ended schemes (not peer-ranked)
+          Include IDCW options, legacy plans and closed-ended schemes (not peer-ranked)
         </label>
 
         <div className="flex gap-2">

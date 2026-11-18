@@ -25,6 +25,7 @@ async fn setup() -> Result<Option<Db>> {
         clickhouse_password: std::env::var("MF_CLICKHOUSE_PASSWORD").unwrap_or("mf_local_password".into()),
         clickhouse_database: "mf_test".into(),
         api_base: String::new(),
+        amfi_scheme_master_url: String::new(),
         concurrency: 1,
         schedule: String::new(),
         timezone: "UTC".into(),
@@ -80,6 +81,34 @@ async fn metrics_match_closed_form_answers() -> Result<()> {
     // An ETF has no plan even when its name carries one.
     let etf_plan = text(&db, "SELECT plan FROM scheme_info WHERE scheme_code = 9042").await?;
     assert_eq!(etf_plan, "");
+    // Plan, option and legacy class come from the daily name, or from AMFI's scheme master where
+    // the daily name leaves them out or another scheme has the same daily name.
+    let named = text(
+        &db,
+        "SELECT arrayStringConcat(groupArray(concat(plan, '/', option, '/', toString(is_legacy_plan), '/', toString(peer_eligible))), ',')
+         FROM (SELECT * FROM scheme_info WHERE scheme_code BETWEEN 9045 AND 9052 ORDER BY scheme_code)",
+    )
+    .await?;
+    let expected: Vec<&str> = mf::testing::NAMED.iter().map(|n| n.3).collect();
+    assert_eq!(named, expected.join(","));
+    // An ETF is one unit class: the master decides whether it pays IDCW, and an index with
+    // "Dividend" in its name is not a payout option.
+    let etfs = text(
+        &db,
+        "SELECT arrayStringConcat(groupArray(concat(plan, '/', option, '/', toString(peer_eligible))), ',')
+         FROM (SELECT * FROM scheme_info WHERE scheme_code IN (9053, 9054) ORDER BY scheme_code)",
+    )
+    .await?;
+    assert_eq!(etfs, "/Growth/1,/Growth/1");
+    // Every category is ranked: ETFs as one plan of their own; closed-ended schemes only in a
+    // category with no open-ended scheme (9044 is a closed-ended Large Cap fund).
+    let ranked = text(
+        &db,
+        "SELECT arrayStringConcat(groupArray(concat(toString(scheme_code), ':', plan, ':', toString(peers))), ',')
+         FROM (SELECT * FROM fund_ranks_latest WHERE metric = 'cagr_3y' AND scheme_code IN (9042, 9043, 9044) ORDER BY scheme_code)",
+    )
+    .await?;
+    assert_eq!(ranked, "9042::3,9043:Direct:1");
 
     // Siblings.
     let sib = text(

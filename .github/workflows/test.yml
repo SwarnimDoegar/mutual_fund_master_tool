@@ -1,0 +1,29 @@
+# Runs the Rust test suites against real ClickHouse and Redis, as `./dev.sh test` does locally:
+# the pipeline's SQL on synthetic funds with closed-form answers, and the API on top of it.
+# Runs on every push and pull request. The images workflow (main only, which deploys) does not
+# wait for it, so push to a branch first and move main once this passes.
+name: test
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rust:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: Start ClickHouse and Redis
+        run: docker compose up -d --wait clickhouse redis
+      - name: cargo test
+        run: ./dev.sh test --workspace
+      - name: ClickHouse log on failure
+        if: failure()
+        run: docker compose logs --tail 200 clickhouse

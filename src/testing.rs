@@ -173,7 +173,29 @@ pub const FRIDAY_END: u32 = 9014; // last NAV on Fri 2026-09-25, market as-of 20
 pub const CATCHUP: [u32; 5] = [9021, 9022, 9023, 9024, 9025]; // Mid Cap: 100 -> 110 -> 121; the last skips the middle day
 pub const THIN_DAY: [u32; 10] = [9031, 9032, 9033, 9034, 9035, 9036, 9037, 9038, 9039, 9040]; // Small Cap: only 3 of 10 publish one day
 pub const STALE_PROXY: u32 = 9041; // Mid Cap benchmark proxy with a 3-week gap; stops publishing on 2026-06-30
-pub const ETF: u32 = 9042; // a gold ETF whose name says "Direct Plan": ETFs have no plan
+pub const ETF: u32 = 9042; // a gold ETF whose name says "Direct Plan": ETFs have no plan, and form one peer group
+pub const ETF_IDCW_NAME: u32 = 9053; // an ETF whose daily name says "Regular Plan - IDCW" but pays nothing (master)
+pub const ETF_DIVIDEND_INDEX: u32 = 9054; // tracks a "Stable Dividend 50" index: not an IDCW option
+pub const FMP: u32 = 9043; // closed-ended, in a category with no open-ended scheme: ranked
+pub const CLOSED_LARGE_CAP: u32 = 9044; // closed-ended, in a category with open-ended schemes: not ranked
+/// Overnight funds whose daily names hide or garble the plan, with AMFI scheme-master names
+/// (`None`: no master row). Expected `plan/option/is_legacy_plan/peer_eligible` last.
+pub const NAMED: [(u32, &str, Option<&str>, &str); 8] = [
+    // three plans that the daily file names only by the fund
+    (9045, "Test Overnight Fund", Some("Test Overnight Fund - Direct Plan - Growth Option"), "Direct/Growth/0/1"),
+    (9046, "Test Overnight Fund", Some("Test Overnight Fund - Direct Plan - Daily IDCW"), "Direct/IDCW/0/0"),
+    (9047, "Test Overnight Fund", Some("Test Overnight Fund - Unclaimed Redemption Plan - Below 3 years"), "Regular/Growth/1/0"),
+    // the main portfolio of a scheme with a segregated portfolio, and the segregated portfolio,
+    // which has the same daily name
+    (9048, "Test Overnight Fund (Existing number of Segregated Portfolios - 1) - Regular Plan - Growth Option", None, "Regular/Growth/0/1"),
+    (9049, "Test Overnight Fund (Existing number of Segregated Portfolios - 1) - Regular Plan - Growth Option",
+     Some("Test Overnight Fund - Segregated Portfolio 1 - Regular Plan - Growth Option"), "Regular/Growth/1/0"),
+    // "Regular Plan" and a trailing "Direct" (Kotak's payout wording)
+    (9050, "Test Overnight Fund - Regular Plan - Payout of Income Distribution cum capital withdrawal option- Direct", None, "Regular/IDCW/0/0"),
+    (9051, "Test Overnight Fund - Direct Plan - Quarterly Option", None, "Direct/IDCW/0/0"),
+    // the master's launch-time "Plan B" is today's Regular plan, which the daily name states
+    (9052, "Test Overnight Fund - Regular Plan - Growth", Some("Test Overnight Fund - Regular Plan B - Growth"), "Regular/Growth/0/1"),
+];
 
 pub fn catchup_days() -> [NaiveDate; 3] {
     [d("2025-08-04"), d("2025-08-05"), d("2025-08-06")]
@@ -192,6 +214,13 @@ pub fn edge_case_navs() -> Vec<NavRow> {
     for day in business_days() {
         push(SKEW, day, if day >= d("2026-09-01") { 11.2 } else { 10.0 });
         push(ETF, day, calendar_growth(50.0, 0.09, day));
+        push(FMP, day, calendar_growth(10.0, 0.07, day));
+        push(ETF_IDCW_NAME, day, calendar_growth(40.0, 0.08, day));
+        push(ETF_DIVIDEND_INDEX, day, calendar_growth(30.0, 0.10, day));
+        push(CLOSED_LARGE_CAP, day, calendar_growth(10.0, 0.10, day));
+        for (code, ..) in NAMED {
+            push(code, day, calendar_growth(1000.0, 0.065, day));
+        }
         // month-end NAVs fall 1% a month from October 2025 on
         let months = (day.year() - 2025) * 12 + day.month() as i32 - 9;
         push(DECLINE, day, 10.0 * 0.99f64.powi(months.max(0)));
@@ -234,7 +263,9 @@ pub async fn seed_edge_cases(db: &Db) -> Result<()> {
     db.exec(
         "INSERT INTO category_map VALUES ('Equity Scheme - Mid Cap Fund', 'Equity', 'Mid Cap Fund', 1),
          ('Equity Scheme - Small Cap Fund', 'Equity', 'Small Cap Fund', 1),
-         ('Exchange Traded Funds (ETFs) - Gold ETF', 'Other', 'Gold ETF', 0)",
+         ('Exchange Traded Funds (ETFs) - Gold ETF', 'Other', 'Gold ETF', 1),
+         ('Income', 'Debt', 'Other Debt Scheme', 1),
+         ('Debt Scheme - Overnight Fund', 'Debt', 'Overnight Fund', 1)",
     )
     .await?;
     db.exec("INSERT INTO benchmark_proxy VALUES ('Mid Cap Fund', 9041, 'Test Midcap 150')").await?;
@@ -246,7 +277,23 @@ pub async fn seed_edge_cases(db: &Db) -> Result<()> {
         scheme(FRIDAY_END, "Test Friday Index Fund - Direct Plan - Growth", idx),
         scheme(STALE_PROXY, "Test Midcap 150 Index Fund - Direct Plan - Growth", idx),
         scheme(ETF, "Test Gold ETF - Direct Plan", "Exchange Traded Funds (ETFs) - Gold ETF"),
+        scheme(ETF_IDCW_NAME, "Test Gold Bees ETF - Regular Plan - IDCW", "Exchange Traded Funds (ETFs) - Gold ETF"),
+        scheme(ETF_DIVIDEND_INDEX, "Test Stable Dividend 50 Gold ETF", "Exchange Traded Funds (ETFs) - Gold ETF"),
+        SchemeRow { scheme_type: "Close Ended Schemes".into(), ..scheme(FMP, "Test Fixed Maturity Plan - Series 1 - Direct Plan - Growth", "Income") },
+        SchemeRow {
+            scheme_type: "Close Ended Schemes".into(),
+            ..scheme(CLOSED_LARGE_CAP, "Test Closed Large Cap Fund - Direct Plan - Growth", "Equity Scheme - Large Cap Fund")
+        },
     ];
+    for (code, name, ..) in NAMED {
+        schemes.push(scheme(code, name, "Debt Scheme - Overnight Fund"));
+    }
+    let master: Vec<String> = NAMED
+        .iter()
+        .filter_map(|(code, _, master, _)| master.map(|m| format!("({code}, '{m}')")))
+        .chain([format!("({ETF_IDCW_NAME}, 'Test Gold Bees ETF')")])
+        .collect();
+    db.exec(&format!("INSERT INTO scheme_master (scheme_code, nav_name) VALUES {}", master.join(", "))).await?;
     let words = ["Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot", "Golf", "Hotel", "India", "Juliet"];
     for (i, code) in CATCHUP.iter().enumerate() {
         schemes.push(scheme(*code, &format!("Test {} Mid Cap Fund - Direct Plan - Growth", words[i]), "Equity Scheme - Mid Cap Fund"));

@@ -33,6 +33,7 @@ SELECT
     -- Direct/Regular pair; the plan word some AMCs put in its name is only a label.
     toUInt8(min(i.raw_category LIKE '%ETF%')) AS exchange_traded,
     toUInt64(countIf(i.is_active)) AS active_schemes,
+    toUInt64(countIf(i.peer_eligible)) AS ranked,
     toUInt64(countIf(i.peer_eligible AND i.plan = 'Direct')) AS ranked_direct,
     toUInt64(countIf(i.peer_eligible AND i.plan = 'Regular')) AS ranked_regular,
     any(bp.index_name) AS benchmark_index
@@ -98,7 +99,7 @@ pub async fn get_category_stats(
 #[into_params(parameter_in = Query)]
 #[serde(deny_unknown_fields)]
 pub struct CategoryIndexParams {
-    /// `Direct` (default) or `Regular`.
+    /// `Direct` or `Regular`. Omitted: `Direct`, or the single plan of an ETF category.
     plan: Option<String>,
     from: Option<NaiveDate>,
     to: Option<NaiveDate>,
@@ -110,7 +111,10 @@ fn category_index_sql() -> String {
     format!(
         "SELECT max(date) AS date, argMax(level, date) AS level, argMax(n_funds, date) AS n_funds
          FROM category_index
-         WHERE category = {{category:String}} AND plan = {{plan:String}} AND date BETWEEN {{from:Date}} AND {{to:Date}}
+         WHERE category = {{category:String}} AND date BETWEEN {{from:Date}} AND {{to:Date}}
+           AND plan = if({{plan:String}} != '', {{plan:String}},
+                         (SELECT if(countIf(plan = 'Direct') > 0, 'Direct', any(plan))
+                          FROM category_index WHERE category = {{category:String}}))
          GROUP BY {BUCKET} AS bucket ORDER BY bucket
          SETTINGS prefer_column_name_to_alias = 1"
     )
@@ -129,7 +133,7 @@ pub async fn get_category_index(
         .db
         .sql(&category_index_sql())
         .param("category", &category)
-        .param("plan", p.plan.unwrap_or_else(|| "Direct".into()))
+        .param("plan", p.plan.unwrap_or_default())
         .param("from", p.from.map(|d| d.to_string()).unwrap_or("1970-01-01".into()))
         .param("to", p.to.map(|d| d.to_string()).unwrap_or("2149-06-06".into()))
         .param("interval", p.interval.unwrap_or(Interval::Week).as_str())
@@ -277,7 +281,7 @@ pub fn doc_queries() -> Vec<DocQuery> {
             .param("plan", ""),
         DocQuery::new("get_category_index", category_index_sql(), true)
             .param("category", "")
-            .param("plan", "Direct")
+            .param("plan", "")
             .param("from", "1970-01-01")
             .param("to", "2149-06-06")
             .param("interval", "week"),

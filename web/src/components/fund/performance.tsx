@@ -5,7 +5,8 @@ import type { Benchmark, CategoryIndexPoint, NavPoint, Scheme } from "@/lib/api/
 import { growthData } from "@/lib/series";
 
 export async function PerformanceSection({ s, v }: { s: Scheme; v: string }) {
-  const plan = s.plan === "Regular" ? "Regular" : "Direct";
+  // ETFs have no plan (''): the API then picks the category's single plan.
+  const plan = s.plan || undefined;
   const [navRes, catRes, benchRes] = await Promise.all([
     api<NavPoint[]>(`/v1/schemes/${s.scheme_code}/nav`, { interval: "day" }, v),
     s.category ? apiOptional<CategoryIndexPoint[]>(`/v1/categories/${seg(s.category)}/index`, { plan, interval: "day" }, v) : null,
@@ -36,7 +37,8 @@ export async function PerformanceSection({ s, v }: { s: Scheme; v: string }) {
       title="Performance"
       subtitle={
         <>
-          Growth of ₹10,000 invested at the start of the chosen period, against the average {s.category} ({plan} plans)
+          Growth of ₹10,000 invested at the start of the chosen period, against the average {s.category}
+          {plan ? ` (${plan} plans)` : null}
           {indexName ? <> and the {indexName} benchmark</> : null}. Hover the chart for the value on any date.
           {proxy && (
             <span className="block">

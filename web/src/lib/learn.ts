@@ -38,14 +38,14 @@ export const TOPICS: Topic[] = [
         title: "Direct vs Regular, Growth vs IDCW",
         meaning:
           "Every scheme comes in a Direct plan (bought straight from the AMC) and a Regular plan (bought through a distributor, who is paid a commission out of the fund). Both own the same portfolio; Regular is a little more expensive. ETFs are the exception: they trade on the stock exchange as a single plan. The Growth option reinvests everything; IDCW options pay part of it out.",
-        how: "Plans and options are read from the scheme name; ETFs get no plan, even when the fund house puts “Direct” or “Regular” in the name. Rankings compare Direct with Direct and Regular with Regular, Growth options only.",
+        how: "Plans and options are read from the scheme's name in AMFI's daily NAV file, and from AMFI's scheme master where that name leaves them out (some fund houses name every plan just by the fund) or is shared by two plans. ETFs get no plan, even when the fund house puts “Direct” or “Regular” in the name. Rankings compare Direct with Direct, Regular with Regular and ETFs with ETFs, Growth options only.",
       },
       {
         id: "categories",
         title: "Categories and peer groups",
         meaning:
           "SEBI sorts funds into categories (Large Cap, Liquid, …) by what they may hold. A fund is only meaningfully compared with others in its category.",
-        how: "AMCs label categories inconsistently, so every label is mapped to one SEBI category (circular of 26 Feb 2026). A peer group is one category and one plan: active, open-ended Growth options, excluding legacy share classes, index funds, ETFs and fund-of-funds.",
+        how: "AMCs label categories inconsistently, so every label is mapped to one SEBI category (circular of 26 Feb 2026). A peer group is one category and one plan: active Growth options, excluding legacy share classes (retail, institutional, unclaimed-redemption and segregated portfolios). Every category is ranked, index funds, ETFs and fund-of-funds included. Closed-ended schemes are ranked only in categories made of them (fixed maturity plans), not against open-ended funds they could not be swapped for.",
       },
       {
         id: "risk-free",
@@ -250,7 +250,7 @@ export const TOPICS: Topic[] = [
         title: "Category average",
         meaning:
           "What the average fund in the category earned: the yardstick for an active fund. It includes funds that were later closed or merged, so past losers are not quietly dropped (no survivorship bias).",
-        how: "An equal-weighted index of every peer-group fund (Direct or Regular), base 100. Each day's return is the average return of funds with a NAV on both that day and the previous index day; a day counts only if at least half the month's funds published.",
+        how: "An equal-weighted index of every peer-group fund, one plan at a time (Direct, Regular, or an ETF category's single plan), base 100. Each day's return is the average return of funds with a NAV on both that day and the previous index day; a day counts only if at least half the month's funds published.",
       },
       {
         id: "benchmark-index",

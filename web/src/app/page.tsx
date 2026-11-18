@@ -178,7 +178,7 @@ async function BrowseCategories({ v }: { v: string }) {
       <div className="panel-head">
         <h2 className="h-section">Browse by category</h2>
         <Link href="/categories" className="link text-[13px]">
-          All categories, including index funds, ETFs and FoFs
+          All categories
         </Link>
       </div>
       <div className="grid gap-x-8 gap-y-5 p-4 sm:grid-cols-2 xl:grid-cols-4">

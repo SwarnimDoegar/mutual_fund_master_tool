@@ -18,6 +18,9 @@ pub struct Settings {
     pub clickhouse_database: String,
     #[arg(long, env = "MF_API_BASE", default_value = "https://api.mfapi.in")]
     pub api_base: String,
+    /// AMFI's scheme master CSV (full plan names); empty skips it.
+    #[arg(long, env = "MF_AMFI_SCHEME_MASTER_URL", default_value = "https://portal.amfiindia.com/DownloadSchemeData_Po.aspx?mf=0")]
+    pub amfi_scheme_master_url: String,
     /// Parallel history requests to mfapi.in.
     #[arg(long, env = "MF_CONCURRENCY", default_value_t = 8)]
     pub concurrency: usize,

@@ -90,22 +90,15 @@ async function CategoryBody({ c, plan, sort, offset, cols, columns, v }: BodyPro
         )}
       </PageTitle>
 
-      {!c.rankable && (
-        <p className="rounded border border-border bg-surface-2 px-3 py-2 text-sm text-muted">
-          Funds in this category are not peer-ranked (passive, fund-of-funds or too heterogeneous), so there is no category average.
-          {c.exchange_traded
-            ? " ETFs trade on the stock exchange as a single plan, so all of them are listed together (some fund houses still put “Direct” or “Regular” in the name)."
-            : null}{" "}
-          Browse them in the{" "}
-          <Link className="link" href={`/screener?category=${encodeURIComponent(c.category)}&all=1&plan=Any`}>
-            screener
-          </Link>
-          .
+      {c.exchange_traded ? (
+        <p className="max-w-3xl text-sm text-muted">
+          ETFs trade on the stock exchange as a single plan, so all of them are ranked together. Some fund houses still put
+          “Direct” or “Regular” in an ETF&apos;s name; it means nothing here.
         </p>
-      )}
+      ) : null}
 
       {/* The category average and spread cover peer-ranked funds only. */}
-      {c.rankable && plan ? (
+      {c.rankable ? (
         <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
           <Suspense fallback={<CardSkeleton title="How the category has done" height="h-80" />}>
             <IndexCard c={c} plan={plan} v={v} />
@@ -123,9 +116,12 @@ async function CategoryBody({ c, plan, sort, offset, cols, columns, v }: BodyPro
   );
 }
 
-async function IndexCard({ c, plan, v }: { c: Category; plan: string; v: string }) {
+/** "(Direct plans)"; ETF categories have one plan, so nothing. */
+const planNote = (plan: string | null) => (plan ? ` (${plan} plans)` : "");
+
+async function IndexCard({ c, plan, v }: { c: Category; plan: string | null; v: string }) {
   const [idx, bench] = await Promise.all([
-    apiOptional<CategoryIndexPoint[]>(`/v1/categories/${seg(c.category)}/index`, { plan, interval: "day" }, v),
+    apiOptional<CategoryIndexPoint[]>(`/v1/categories/${seg(c.category)}/index`, { plan: plan ?? undefined, interval: "day" }, v),
     api<Benchmark[]>("/v1/benchmarks", undefined, v),
   ]);
   const points = (idx?.data ?? []).map((p) => ({ date: p.date, value: p.level }));
@@ -149,7 +145,7 @@ async function IndexCard({ c, plan, v }: { c: Category; plan: string; v: string 
       title="How the category has done"
       subtitle={
         <>
-          Growth of ₹10,000 in the average {c.category} ({plan} plans): an equal-weighted mix of every fund in the category on each
+          Growth of ₹10,000 in the average {c.category}{planNote(plan)}: an equal-weighted mix of every fund in the category on each
           day, including funds that were later merged or closed, so past losers are not quietly dropped.
           {indexName && proxy ? ` Benchmark line: ${proxy.proxy_scheme_name}, an index fund tracking ${indexName}.` : null}
         </>
@@ -166,14 +162,14 @@ async function IndexCard({ c, plan, v }: { c: Category; plan: string; v: string 
 
 const STAT_ORDER = ["ret_1y", "cagr_3y", "cagr_5y", "cagr_10y", "volatility_3y", "max_drawdown_3y", "sharpe_3y", "sortino_3y", "alpha_3y_category", "rolling_3y_median", "sip_xirr_5y"];
 
-async function StatsCard({ c, plan, v }: { c: Category; plan: string; v: string }) {
-  const res = await apiOptional<CategoryStat[]>(`/v1/categories/${seg(c.category)}/stats`, { plan }, v);
+async function StatsCard({ c, plan, v }: { c: Category; plan: string | null; v: string }) {
+  const res = await apiOptional<CategoryStat[]>(`/v1/categories/${seg(c.category)}/stats`, { plan: plan ?? undefined }, v);
   const by = new Map((res?.data ?? []).map((r) => [r.metric, r]));
   const rows = STAT_ORDER.flatMap((k) => (by.has(k) ? [by.get(k)!] : []));
   return (
     <Card
       title="How the funds spread"
-      subtitle={`${plan} plans. Median: the middle fund. 25th / 75th: a quarter of funds are below / above that value. "Best fund" follows each metric's direction (e.g. lowest volatility).`}
+      subtitle={`${plan ? `${plan} plans. ` : ""}Median: the middle fund. 25th / 75th: a quarter of funds are below / above that value. "Best fund" follows each metric's direction (e.g. lowest volatility).`}
     >
       {rows.length === 0 ? (
         <Empty>No ranked funds.</Empty>

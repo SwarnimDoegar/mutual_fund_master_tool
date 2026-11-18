@@ -991,6 +991,7 @@ export interface components {
             rankable: number;
             exchange_traded: number;
             active_schemes: number;
+            ranked: number;
             ranked_direct: number;
             ranked_regular: number;
             benchmark_index?: string | null;
@@ -1298,7 +1299,7 @@ export interface operations {
     get_category_index: {
         parameters: {
             query?: {
-                /** @description `Direct` (default) or `Regular`. */
+                /** @description `Direct` or `Regular`. Omitted: `Direct`, or the single plan of an ETF category. */
                 plan?: string;
                 from?: string;
                 to?: string;

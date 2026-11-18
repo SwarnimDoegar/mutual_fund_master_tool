@@ -46,6 +46,7 @@ async fn setup() -> Result<Option<Router>> {
         clickhouse_password: password.clone(),
         clickhouse_database: DB.into(),
         api_base: String::new(),
+        amfi_scheme_master_url: String::new(),
         concurrency: 1,
         schedule: String::new(),
         timezone: "UTC".into(),
@@ -114,6 +115,14 @@ async fn api_serves_correct_metrics() -> Result<()> {
     let cats = get(&app, "/v1/categories").await;
     let large_cap = cats.json["data"].as_array().unwrap().iter().find(|c| c["category"] == "Large Cap Fund").unwrap();
     assert_eq!(large_cap["exchange_traded"], 0);
+    let n = |k: &str| large_cap[k].as_u64().unwrap();
+    assert!(n("ranked_direct") > 0 && n("ranked_regular") > 0);
+    assert_eq!(n("ranked"), n("ranked_direct") + n("ranked_regular"));
+    // The category index defaults to the Direct plan.
+    let idx = get(&app, "/v1/categories/Large%20Cap%20Fund/index?interval=month").await;
+    let direct = get(&app, "/v1/categories/Large%20Cap%20Fund/index?interval=month&plan=Direct").await;
+    assert_eq!(idx.status, StatusCode::OK);
+    assert_eq!(idx.json["data"], direct.json["data"]);
 
     // Search: every word must match; Direct Growth first.
     let s = get(&app, "/v1/schemes?q=steady%20large").await;
